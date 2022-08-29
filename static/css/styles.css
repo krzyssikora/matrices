@@ -1,0 +1,360 @@
+:root {
+  /* dimensions */
+  --navbar-height: 40px;
+  --section-header-height: 40px;
+  --section-height: calc(100vh - 2 * var(--navbar-height));
+  --items-padding: 10px;
+  --standard-margin-padding: 10px;
+  /* --standard-margin-padding-vertical: 10px;
+  --standard-margin-padding-horizontal: 10px; */
+  --left-width: calc(70% - 2 * var(--items-padding));
+  --right-width: calc(30% - 2 * var(--items-padding));
+  /* colours */
+  --colour-left: rgb(253, 248, 207);
+  --colour-right: rgb(207, 237, 255);
+  --colour-navbar-background: rgb(196, 255, 176);
+  --colour-navbar-text: rgb(97, 94, 94);
+  --colour-navbar-background-hover: rgb(255, 126, 94);
+  --colour-navbar-text-hover: white;
+  --colour-left-formula: rgb(255, 236, 175);
+  --colour-left-border: rgb(145, 86, 9);
+  --colour-section-header: rgba(255, 255, 255, 0.5);
+  --colour-scrollbar: rgb(255, 126, 94);
+  --colour-scrollbar-background: var(--colour-navbar-background);
+  --colour-scrollbar-hover: rgb(78, 78, 78);
+  --colour-pop-up-button: var(--colour-navbar-background);
+  /* --colour-left: rgb(205, 206, 200); */
+  /* --colour-left: rgb(196, 255, 176); */
+  /* --colour-navbar-background: rgb(255, 244, 150); */
+  /* --colour-navbar-text: rgb(154, 154, 154); */
+  /* --colour-navbar-background-hover: rgb(255, 188, 89); */
+  /* --colour-left-formula: rgb(220, 220, 220); */
+}
+
+body {
+  font-family: "Source Code Pro", monospace;
+}
+
+/* The navigation bar */
+/* full width, fixed to the top */
+.navbar {
+  overflow: hidden;
+  background-color: var(--colour-navbar-background);
+  position: fixed; 
+  top: 0; 
+  width: calc(100% - 16px); 
+  height: var(--navbar-height);
+}
+
+/* Links inside the navbar */
+.navbar a {
+  float: left;
+  display: block;
+  color: var(--colour-navbar-text);
+  text-align: center;
+  padding: 10px 20px;
+  text-decoration: none;
+}
+
+/* Change background on mouse-over */
+.navbar a:hover {
+  background: var(--colour-navbar-background-hover);
+  color: var(--colour-navbar-text-hover);
+}
+
+/* Main content */
+.main {
+  margin-top: var(--navbar-height); /* to avoid content overlay */
+  height: 98%;
+  overflow: hidden;
+} 
+
+.section-header {
+  margin: 0;
+  position: fixed; 
+  top: var(--navbar-height);
+  display: block;
+  height: var(--section-header-height);
+  background-color: var(--colour-section-header);
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  width: auto;
+  z-index: 1;
+}
+
+/* Designing for scroll-bar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--colour-scrollbar-background);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--colour-scrollbar);
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--colour-scrollbar-hover);
+}
+
+#algebra-header {
+  width: calc(var(--left-width) - 25px);
+}
+
+#storage-header {
+  width: calc(var(--right-width) - 25px);
+}
+
+.section-content {
+  /* margin-top: calc(var(--section-header-height) + var(--navbar-height)); */
+  margin-top: var(--section-header-height);
+}
+
+#algebra {
+  float: left;
+  padding: var(--items-padding);
+  width: var(--left-width);
+  background: var(--colour-left);
+  height: var(--section-height);
+  overflow: auto;
+  direction: rtl;
+  text-align: left;
+}
+
+.algebra-chunk {
+  width: 100%;
+  border: solid 1px var(--colour-left-border);
+  border-radius: 10px;
+  padding-top: 0;
+  margin: var(--standard-margin-padding) 0;
+}
+
+span.deleteicon span {
+  position: relative;
+  display: block;
+  right: 5px;
+  left: 5px;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: solid 1px white;
+  border-radius: 30%;
+  color: var(--colour-left-border);
+  background-color: white;
+  font: 18px monospace;
+  text-align: center;
+  line-height: 1em;
+  cursor: pointer;
+}
+
+span.deleteicon span:hover {
+  border: solid 1px var(--colour-left-border);
+}
+
+span#clearfieldicon span {
+  position: relative;
+  display: block;
+  right: 20px;
+  top: -35px;
+  width: 20px;
+  height: 20px;
+  border-radius: 30%;
+  color: var(--colour-left-border);
+  background-color: var(--colour-left);
+  font: 18px monospace;
+  text-align: center;
+  line-height: 1em;
+  cursor: pointer;
+}
+span#clearfieldicon span:hover {
+  color: var(--colour-navbar-background-hover);
+  cursor: pointer;
+}
+
+#user-input {
+  width: calc(100% - 2 * var(--standard-margin-padding));
+  margin: var(--standard-margin-padding);
+  height: 26px;
+  direction: ltr;
+  border: solid 1px var(--colour-scrollbar);
+  border-radius: 4px;
+  font-size: large;
+}
+
+
+.entered-formula {
+  background-color: var(--colour-left-formula);
+  margin: var(--standard-margin-padding);
+  margin-top: -10px;
+  margin-bottom: 0;
+  padding: var(--standard-margin-padding);
+}
+
+.app-answer {
+  padding: var(--standard-margin-padding);
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.pop-up-form-label {
+  display: block;
+  min-width: 300px;
+}
+
+.pop-up-form-input {
+  font-size: large;
+}
+
+#pop-up-form-info {
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.pop-up-form-button {
+  font-size: large;
+  padding: 5px;
+  margin: 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--colour-pop-up-button);
+}
+
+#storage {
+  float: right;
+  padding: var(--items-padding);
+  width: var(--right-width);
+  background: var(--colour-right);
+  height: var(--section-height);
+  overflow: auto;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  top: 0;
+  margin: auto;
+  width: 100%; 
+  height: 100%;
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(128,128,128); /* Fallback color */
+  background-color: rgba(128,128,128,0.9); /* Black w/ opacity */
+  padding-top: 60px;
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: var(--colour-main-background);
+  margin: 5px auto; /* 15% from the top and centered */
+  border: 1px solid var(--colour-border);
+  border-radius: 10px;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+  /* Position it in the top right corner outside of the modal */
+  position: absolute;
+  right: 25px;
+  top: 0;
+  color: var(--colour-border);
+  font-size: 35px;
+  font-weight: bold;
+}
+
+/* Close button on hover */
+.close:hover,
+.close:focus {
+  color: var(--colour-dark-magenta);
+  cursor: pointer;
+}
+
+/* Add Zoom Animation */
+.animate {
+  -webkit-animation: animatezoom 0.6s;
+  animation: animatezoom 0.6s
+}
+
+@-webkit-keyframes animatezoom {
+  from {-webkit-transform: scale(0)}
+  to {-webkit-transform: scale(1)}
+}
+
+@keyframes animatezoom {
+  from {transform: scale(0)}
+  to {transform: scale(1)}
+}
+
+#matrix-name-div, #matrix-dimensions-div {
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 10px;
+  display: none;
+}
+
+.input-error-info {
+  padding: 10px;
+  color: red;
+  background-color: rgba(255, 255, 255, 0.5);
+  display: none;
+}
+
+#matrix-input {
+  border-left: solid black;
+  border-right: solid black;
+  border-radius: 10px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin-left: 40px;
+  display: none;
+  gap: 0;
+  align-items: start;
+  padding: 5px;
+}
+
+.matrix-elt {
+  width: fit-content;
+  height: 30px;
+  max-width: 30px;
+  border: 0;
+  border-radius: 4px;
+  padding: 3px;
+  margin: 3px;
+  font-size: large;
+  text-align: center;
+}
+
+
+/* hidden elements */
+.hidden-data {
+  visibility: hidden;
+  display: none;
+}
+/* # for id
+   . for class */
