@@ -180,6 +180,30 @@ def change_latex_restricted_words(input_string):
                 if pos < 0:
                     break
                 input_string = input_string[:pos] + '\{} '.format(word.lower()) + input_string[pos + len(word):]
+    for restricted_word in {'rref'}:
+        for word in {restricted_word, restricted_word.upper()}:
+            pos = -5 - len(word)
+            while True:
+                pos = input_string.find(word, pos + len(word) + 5)
+                if pos < 0:
+                    break
+                input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[pos + len(word):]
+                _logger.debug('rest word: {} at {}, {}'.format(word, pos, input_string))
+    for restricted_word_with_prefix in {('ref', 'r')}:
+        restricted_word, prefix = restricted_word_with_prefix
+        for word in {restricted_word, restricted_word.upper()}:
+            pos = -5 - len(word) - len(prefix)
+            while True:
+                pos = input_string.find(word, pos + len(prefix) + len(word) + 5)
+                if pos < 0:
+                    break
+                if input_string[pos - 1: pos + len(word) + len(prefix) - 1].lower() == (prefix + word).lower():
+                    break
+                abc = input_string[pos: pos + len(word) + len(prefix)]
+                input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[
+                                                                                           pos + len(word):]
+                _logger.debug('rest word: {} at {}, {}'.format(word, pos, input_string))
+                _logger.debug(abc)
     return input_string
 
 
