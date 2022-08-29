@@ -8,12 +8,15 @@ import git
 
 @app.route('/git_update', methods=['POST'])
 def git_update():
-    repo = git.Repo('./matrices')
-    origin = repo.remotes.origin
-    repo.create_head('main',
-                     origin.refs.main).set_tracking_branch(origin.refs.main).checkout()
-    origin.pull()
-    return '', 200
+    if request.method == 'POST':
+        repo = git.Repo('./matrices')
+        origin = repo.remotes.origin
+        repo.create_head('main',
+                         origin.refs.main).set_tracking_branch(origin.refs.main).checkout()
+        origin.pull()
+        return '', 200
+    else:
+        return '', 400
 
 
 @app.route('/')
