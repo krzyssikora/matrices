@@ -11,8 +11,8 @@ def git_update():
     if request.method == 'POST':
         repo = git.Repo('./matrices')
         origin = repo.remotes.origin
-        repo.create_head('main',
-                         origin.refs.main).set_tracking_branch(origin.refs.main).checkout()
+        repo.create_head('master',
+                         origin.refs.master).set_tracking_branch(origin.refs.master).checkout()
         origin.pull()
         return '', 200
     else:
