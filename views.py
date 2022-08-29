@@ -87,7 +87,9 @@ def get_and_process_user_input():
     input_processed = utils.mathjax_wrap(utils.get_input_read(user_input))
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
-
+    _logger.debug('user_input: {}'.format(user_input))
+    _logger.debug('input_processed: {}'.format(input_processed))
+    _logger.debug('input_latexed: {}'.format(input_latexed))
     return jsonify({
         'matrices_list': matrices_list,
         'input_processed': input_processed,

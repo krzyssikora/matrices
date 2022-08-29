@@ -247,29 +247,8 @@ def read_input(inp, input_iteration=0):
             Either a string that will be proceed within read_input
             or a tuple (None, error_message (str))
         """
-        if input_string.lower() in {"quit", "exit", "out", "end"}:
-            return "e"
-        elif input_string == "CLS":
+        if input_string == "CLS":
             return "c"
-        elif input_string == "CREATE":
-            utils.create_matrix()
-            return ""
-        elif input_string.startswith("WOLFRAMALPHA"):
-            # returns the matrix in a form ready to be pasted
-            # into wolframalpha.com
-            if input_string.startswith("WOLFRAMALPHA(") and input_string.endswith(")"):
-                m_name = inp[13:-1]
-            elif input_string.startswith("WOLFRAMALPHA"):
-                m_name = input_string[12:].strip()
-            else:
-                m_name = ""
-            if m_name not in matrices_dict:
-                m_name = read_input(m_name)
-                if not isinstance(m_name, Matrix):
-                    return None, "Improper input of \"WOLFRAMALPHA\"."
-            else:
-                m_name = matrices_dict.get(m_name)
-            return m_name.__str__(False)
         elif input_string.startswith("DEL"):
             # deleting a matrix
             if input_string.startswith("DEL(") and input_string.endswith(")"):
@@ -287,18 +266,18 @@ def read_input(inp, input_iteration=0):
                 if terms > 1:
                     multiple_inp = multiple_input(m_name, terms)
                     if multiple_inp is None:
-                        return None, "Improper input of \"DEL\"."
+                        return None, '\\text{Improper input of "del".}'
                     if isinstance(multiple_inp, list):
                         for mat in multiple_inp:
                             if not isinstance(mat, Matrix):
-                                return None, "Improper input of \"DEL\"."
+                                return None, '\\text{Improper input of "del".}'
                         for mat in multiple_inp:
                             mats = list(matrices_dict.values())
                             names = list(matrices_dict.keys())
                             ind = mats.index(mat)
                             database.delete_matrix(names[ind])
                     return ""
-                return None, "There is no matrix named " + m_name + " in the database."
+                return None, f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
         elif input_string.startswith("HELP"):
             # displays help commands
             if len(input_string) == 4:
@@ -858,11 +837,10 @@ def read_input(inp, input_iteration=0):
     for prefix in ["AUG(", "SUB(", "CREATE(", "RREF(", "REF(", "DET("]:
         inp = prefix_functions(inp, prefix)
         if inp is None:
-            return None, "\\text{Improper input of }\"" + prefix[:-1] + "\"."
+            return None, f'\\text{{Improper input of "{{{prefix[:-1].lower()}}}".}}'
         if inp == "":
             return ""  # everything is fine, but all already done
     inp = rearrange_spaces_and_brackets(inp)
-    _logger.debug('...... {}'.format(inp))
     inp = power(inp)
     if inp is None:
         return None, "\\text{A power cannot be evaluated.}"

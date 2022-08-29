@@ -173,50 +173,51 @@ def insert_latex_multiplications(input_string):
 
 def change_latex_restricted_words(input_string):
     for restricted_word in {'det'}:
-        for word in {restricted_word, restricted_word.upper()}:
-            pos = -1
-            while True:
-                pos = input_string.find(word, pos + 1)
-                if pos < 0:
-                    break
-                input_string = input_string[:pos] + '\{} '.format(word.lower()) + input_string[pos + len(word):]
-    for restricted_word in {'rref'}:
-        for word in {restricted_word, restricted_word.upper()}:
-            pos = -5 - len(word)
-            while True:
-                pos = input_string.find(word, pos + len(word) + 5)
-                if pos < 0:
-                    break
-                input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[pos + len(word):]
-                _logger.debug('rest word: {} at {}, {}'.format(word, pos, input_string))
+        word = restricted_word.upper()
+        pos = -1
+        while True:
+            pos = input_string.find(word, pos + 1)
+            if pos < 0:
+                break
+            input_string = input_string[:pos] + '\{} '.format(word.lower()) + input_string[pos + len(word):]
+
+    for restricted_word in {'rref', 'del', 'aug', 'sub'}:
+        word = restricted_word.upper()
+        _logger.debug('word: {}'.format(word))
+        pos = -6 - len(word)
+        while True:
+            pos = input_string.find(word, pos + len(word) + 6)
+            _logger.debug('pos: {}'.format(pos))
+            if pos < 0:
+                break
+            input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[pos + len(word):]
+            _logger.debug('input_string: {}'.format(input_string))
+
     for restricted_word_with_prefix in {('ref', 'r')}:
         restricted_word, prefix = restricted_word_with_prefix
-        for word in {restricted_word, restricted_word.upper()}:
-            pos = -5 - len(word) - len(prefix)
-            while True:
-                pos = input_string.find(word, pos + len(prefix) + len(word) + 5)
-                if pos < 0:
-                    break
-                if input_string[pos - 1: pos + len(word) + len(prefix) - 1].lower() == (prefix + word).lower():
-                    break
-                abc = input_string[pos: pos + len(word) + len(prefix)]
-                input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[
-                                                                                           pos + len(word):]
-                _logger.debug('rest word: {} at {}, {}'.format(word, pos, input_string))
-                _logger.debug(abc)
+        word = restricted_word.upper()
+        pos = -6 - len(word) - len(prefix)
+        while True:
+            pos = input_string.find(word, pos + len(prefix) + len(word) + 6)
+            if pos < 0:
+                break
+            if input_string[pos - 1: pos + len(word) + len(prefix) - 1].lower() == (prefix + word).lower():
+                break
+            input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[
+                                                                                       pos + len(word):]
     return input_string
 
 
 def change_to_latex(input_string):
-    _logger.debug('input before processing    : {}'.format(input_string))
+    # _logger.debug('input before processing    : {}'.format(input_string))
     input_string = insert_latex_indices(input_string)
-    _logger.debug('input after indices        : {}'.format(input_string))
+    # _logger.debug('input after indices        : {}'.format(input_string))
     input_string = insert_latex_fractions(input_string)
-    _logger.debug('input after fractions      : {}'.format(input_string))
+    # _logger.debug('input after fractions      : {}'.format(input_string))
     input_string = insert_latex_multiplications(input_string)
-    _logger.debug('input after multiplications: {}'.format(input_string))
+    # _logger.debug('input after multiplications: {}'.format(input_string))
     input_string = change_latex_restricted_words(input_string)
-    _logger.debug('input after restr. words: {}'.format(input_string))
+    # _logger.debug('input after restr. words: {}'.format(input_string))
     return input_string
 
 
@@ -416,5 +417,5 @@ def mathjax_wrap(ltx_string):
 
 
 if __name__ == '__main__':
-    string = 'a+a'
-    print(change_to_latex(string))
+    for string in ['ref(z)', 'rref(z)', 'del(z)', 'aug(z)']:
+        print(string, change_to_latex(string))
