@@ -337,7 +337,7 @@ var algebra_content;
             rows_field.select();
             // get dimensions
             // rows
-            // tab should foucus on rows input
+            // tab should focus on rows input
             rows_field.addEventListener('keydown', (e) => {
                 var key = e.charCode || e.keyCode || 0;
                 if ((key == 9 || key == '9') && (columns_number > 0)) {

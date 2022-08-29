@@ -5,8 +5,6 @@
   --section-height: calc(100vh - 2 * var(--navbar-height));
   --items-padding: 10px;
   --standard-margin-padding: 10px;
-  /* --standard-margin-padding-vertical: 10px;
-  --standard-margin-padding-horizontal: 10px; */
   --left-width: calc(70% - 2 * var(--items-padding));
   --right-width: calc(30% - 2 * var(--items-padding));
   /* colours */
@@ -23,12 +21,6 @@
   --colour-scrollbar-background: var(--colour-navbar-background);
   --colour-scrollbar-hover: rgb(78, 78, 78);
   --colour-pop-up-button: var(--colour-navbar-background);
-  /* --colour-left: rgb(205, 206, 200); */
-  /* --colour-left: rgb(196, 255, 176); */
-  /* --colour-navbar-background: rgb(255, 244, 150); */
-  /* --colour-navbar-text: rgb(154, 154, 154); */
-  /* --colour-navbar-background-hover: rgb(255, 188, 89); */
-  /* --colour-left-formula: rgb(220, 220, 220); */
 }
 
 body {
