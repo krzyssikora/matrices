@@ -13,7 +13,7 @@ app = Flask(__name__)
 import matrices.views
 
 # todo:
-#  1. assigning answers in user input
-#  2. refreshing storage after 1
-#  3. passing data from python to JS without hidden elements ?
-#  4. 'a^-1*145/3' does not work, but 'a^-1*145*(1/3)' does
+#  1. refreshing storage after assigning answers in user input
+#  2. passing data from python to JS without hidden elements ?
+#  3. 'a^-1*145/3' does not work, but 'a^-1*145*(1/3)' does
+#  4. remove nonlocal variables

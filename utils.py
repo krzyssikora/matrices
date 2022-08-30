@@ -10,7 +10,7 @@ def get_list_of_matrix_dict_latexed(m_dict):
     m_list = list()
     for name, matrix in m_dict.items():
         m_list.append((name, mathjax_wrap('{}={}'.format(name, matrix.get_latex_form()))))
-        # m_list.append((name, '\({}={}\)'.format(name, matrix.get_latex_form())))
+    m_list.sort()
     return m_list
 
 
@@ -217,22 +217,15 @@ def get_input_read(inp, matrices_dict):
     """Reads user's input and returns an adequate answer."""
     tmp_matrices = dict()
     tmp_fractions = dict()
-    result = algebra.read_input(inp,
-                                matrices_dict,
-                                tmp_matrices,
-                                tmp_fractions,
-                                0)
-
-    # todo temp:
-    assign_answer = [False, False, '']
-
-    # if result in {"q", "e"}: quit() todo these have to be changed in read_input, too
+    result_status, result, assign_answer = algebra.read_input(inp,
+                                                              matrices_dict,
+                                                              tmp_matrices,
+                                                              tmp_fractions,
+                                                              0)
 
     return_string = ''
-    if result is None:
+    if not result_status:
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
-    elif isinstance(result, tuple) and result[0] is None:
-        return_string = result[1] + '\\text{ I cannot perform the operation requested. Try again.}'
     elif isinstance(result, str):
         return_string = result
     else:
@@ -242,12 +235,10 @@ def get_input_read(inp, matrices_dict):
                 matrices_dict.update({assign_answer[2]: result})
                 if assign_answer[1]:  # answer is to overwrite an existing matrix
                     database.delete_matrix(assign_answer[2])
-                    # todo: there  was an argument False, so that the name is not deleted from matrices_dict,
-                    #  then global variable
                     return_string += '\\text{{ The result was stored ' \
                                      'in the existing matrix }}{}.'.format(assign_answer[2])
                 else:
-                    return_string += '{{ The result was stored in the new matrix }}{}.'.format(assign_answer[2])
+                    return_string += '\\text{{ The result was stored in the new matrix }}{}.'.format(assign_answer[2])
                 database.save_matrix(assign_answer[2], matrices_dict)
         elif isinstance(result, tuple):
             if result[1] == 1:

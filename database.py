@@ -30,10 +30,6 @@ def delete_matrix(m_name):
 
     Args:
         m_name (str): A name, as in matrices_dict, not an actual object.
-        # todo: this is removed, but stayed in utils.get_input_read
-        #   fully = False is used in case of overwriting, i.e. creating a new matrix and storing it on an existing one.
-        #   In such a case the matrix previously labeled with this name should be removed from the database,
-        #   but in the dictionary an update is sufficient.
     """
     conn = sqlite3.connect(config.DATABASE)
     cur = conn.cursor()

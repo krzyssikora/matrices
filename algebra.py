@@ -239,7 +239,6 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         input_iteration (int): Shows the depth of recursion.
             (restricted characters are checked only for iteration = 0)
     """
-    global assign_answer  # tmp_matrices, tmp_fractions
     # todo: remove global variables
     # a few auxiliary functions
 
@@ -286,6 +285,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     return ""
                 return None, f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
         elif input_string.startswith("HELP"):
+            # todo: change it to displaying help message
             # displays help commands
             if len(input_string) == 4:
                 utils.matrix_help_general_menu()
@@ -325,8 +325,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         1: overwrite (bool) - if True, answer overwrites an existing matrix,
         2: name of the new matrix
         """
-        global assign_answer
-        nonlocal correct
+        assign_answer = [False, False, '']
         if "=" in input_string:
             equal_sign_position = input_string.find("=")
             inp_new_variable = input_string[:equal_sign_position]
@@ -338,9 +337,9 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     assign_answer[1] = True  # answer is to overwrite an existing matrix
                 assign_answer[2] = inp_new_variable
             else:
-                return True
+                return True, None
             assign_answer[0] = True  # answer must be stored
-        return False
+        return False, assign_answer
 
     def rearrange_spaces_and_brackets(input_string):
         """Removes spaces obtained from replacing parts of input with simplified expressions.
@@ -439,8 +438,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
 
     # TODO: documentation here
     # TODO: make it shorter
-    def prefix_functions(input_string, pref):
-        global assign_answer
+    def prefix_functions(input_string, pref, assign_answer):
         nonlocal brackets, brackets_open, brackets_close, input_iteration
         # replaces functions in the input (input_string) of the form: func(...)
         # where pref = "func("
@@ -849,52 +847,54 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 print(e)
                 return None
 
+    assign_answer = [False, False, '']
+    nothing_to_return = False, '', [False, False, '']
     inp = inp.upper().replace(" ", "")
     basic_output = basics(inp, matrices_dict)
     if basic_output is not None:
-        return basic_output
+        return True, basic_output, assign_answer
     if restricted_chars_used(inp, input_iteration):
-        return None
-    correct = False
-    if invalid_assignment_variable(inp, matrices_dict):
-        return None, "New matrix name is incorrect."
+        return nothing_to_return
+    invalid_assignment, assign_answer = invalid_assignment_variable(inp, matrices_dict)
+    if invalid_assignment:
+        return False, "New matrix name is incorrect.", assign_answer
     else:
         inp = inp[inp.find("=") + 1:]
 
     # the rest is for the part after "="
     brackets = get_pairs_of_brackets_from_string(inp)
     if brackets is None:
-        return None, "Unbalanced brackets."
+        return False, "Unbalanced brackets.", assign_answer
     inp = remove_redundant_brackets(inp)
     if inp is None:
-        return None, "Brackets do not match."
+        return False, "Brackets do not match.", assign_answer
     brackets_open = [x[0] for x in brackets]
     brackets_close = [x[1] for x in brackets]
     for prefix in ["AUG(", "SUB(", "RREF(", "REF(", "DET("]:
-        inp = prefix_functions(inp, prefix)
+        inp = prefix_functions(inp, prefix, assign_answer)
         if inp is None:
-            return None, f'\\text{{Improper input of "{{{prefix[:-1].lower()}}}".}}'
+            return False, f'\\text{{Improper input of "{{{prefix[:-1].lower()}}}".}}', assign_answer
         if inp == "":
-            return ""  # everything is fine, but all already done
+            return True, "", assign_answer  # everything is fine, but all already done
     inp = rearrange_spaces_and_brackets(inp)
     inp = power(inp, matrices_dict, tmp_matrices)
     if inp is None:
-        return None, "\\text{A power cannot be evaluated.}"
+        return False, "\\text{A power cannot be evaluated.}", assign_answer
     inp = rearrange_spaces_and_brackets(inp)
     if len(brackets) > 0:
         inp = read_input_recursively(inp)
     if inp is None:
-        return None
+        return nothing_to_return
     inp = splitting_operations(inp, 0)
     if not isinstance(inp, str):
         if inp is None:
-            return None
+            return nothing_to_return
         else:
-            return inp
+            return True, inp, assign_answer
     inp = splitting_operations(inp, 1)
     if not isinstance(inp, str):
-        return inp
-    return simple_object(inp, matrices_dict)
+        return True, inp, assign_answer
+    return True, simple_object(inp, matrices_dict), assign_answer
 
 
 class Matrix:
@@ -1435,10 +1435,6 @@ class EmptyMatrix(Matrix):
             self.denominator = 1
             self.mat = [[0 for _ in range(self.rows)] for _ in range(self.rows)]
 
-
-# matrices_dict = dict()
-tmp_fractions = dict()
-assign_answer = [False, False, ""]
 
 if __name__ == '__main__':
     fracs = ['1.2', '2/-3', '-4/-3', '2/3', '', '4/14']
