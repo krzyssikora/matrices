@@ -221,12 +221,18 @@ def change_to_latex(input_string):
     return input_string
 
 
-def get_input_read(inp):
+def get_input_read(inp, matrices_dict):
     """Reads user's input and returns an adequate answer."""
-    global matrices_dict, assign_answer, tmp_matrices, tmp_fractions
     tmp_matrices = dict()
     tmp_fractions = dict()
-    result = algebra.read_input(inp, 0)
+    result = algebra.read_input(inp,
+                                matrices_dict,
+                                tmp_matrices,
+                                tmp_fractions,
+                                0)
+
+    # todo temp:
+    assign_answer = [False, None, None]
 
     # if result in {"q", "e"}: quit() todo these have to be changed in read_input, too
 
@@ -261,60 +267,6 @@ def get_input_read(inp):
 
     return return_string
 
-
-
-# def create_matrix():
-#     # todo: redundant? made in JS
-#     """Creates a matrix entered by a user.
-#
-#     The user inputs the following information following a prompt:
-#     number of rows, number of columns and either entries entered manually or assigned randomly.
-#
-#     The matrix is added to the global matrices_dict dictionary and to the database.
-#     """
-#     if len(matrices_dict) == 0:
-#         database.import_from_database()
-#     # asks for dimensions
-#     while True:
-#         r = input("Number of rows:    ")
-#         try:
-#             rows = int(r)
-#             break
-#         except Exception as e:
-#             print(e)
-#     while True:
-#         c = input("Number of columns: ")
-#         try:
-#             columns = int(c)
-#             break
-#         except Exception as e:
-#             print(e)
-#     # asks for the matrix name
-#     print("Matrix name (5 characters, only letters and digits, digits must follow letters).")
-#     print("A name cannot contain \"DET\", \"CLS\", \"HELP\", \"END\", \"QUIT\" and \"CREATE\" "
-#           "and be equal \"T\", as these are reserved words.")
-#     while True:
-#         name = input("Enter name: ").upper()
-#         correct, stderr = correct_matrix_name(name)
-#         if not correct:
-#             print(stderr)
-#         else:
-#             # asks for the method of creating the matrix:
-#             # either manually, or randomly
-#             while True:
-#                 method = input("M - enter values manually\nR - assign pseudo-random values\n")
-#                 if method in {"M", "m"}:
-#                     random_assignment = False
-#                     break
-#                 if method in {"R", "r"}:
-#                     random_assignment = True
-#                     break
-#             matrices_dict.update({name: Matrix(rows, columns, random_assignment=random_assignment)})
-#             save_matrix(name)
-#             print("Matrix " + name + ":")
-#             print(matrices_dict.get(name))
-#             print("has been created.")
-#             break
 
 
 def matrix_help_general_menu():

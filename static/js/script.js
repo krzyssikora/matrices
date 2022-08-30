@@ -50,7 +50,7 @@ var algebra_content;
     };
 
     function updateStorage() {
-        $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content" );
+        $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content>*","" );
     };
 
     function focusOnInput() {
@@ -439,12 +439,16 @@ var algebra_content;
         var matrix = {'name': name, 'rows': rows, 'columns': columns, 'values': values};
         algebra_content = $("#algebra div.section-content").html();
         sendMatrixDataToCreate(matrix);
-        updateStorage();
         setTimeout(() => {
-            MathJax.typesetPromise();
-            ScrollToBottom(document.getElementById('storage'));
-            focusOnInput();
+            updateStorage();
+            setTimeout(() => {
+                MathJax.typesetPromise();
+                ScrollToBottom(document.getElementById('storage'));
+                focusOnInput();
+            }, 100);
         }, 100);
+        // TODO the timeouts above must be changed
+        
         addListenersDeleteMatrix();
         addListenersCopyMatrixToInput();
     });

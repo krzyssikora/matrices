@@ -1,5 +1,5 @@
 from matrices import app
-from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
+# from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
 from matrices import database, utils, algebra
 from matrices.config import _logger
 from flask import render_template, request, jsonify
@@ -21,7 +21,6 @@ def git_update():
 
 @app.route('/')
 def index():
-    global matrices_dict, matrices_str_dict, tmp_matrices, matrices_names
     matrices_dict = database.import_from_database()
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     return render_template(
@@ -29,23 +28,13 @@ def index():
         matrices_list=matrices_list
     )
 
-#
-# @app.route('/from_python')
-# def send_data(js_data):
-#     r = Response(response='<p>{}</p>'.format(js_data), status=200, mimetype="application/xml")
-#     r.headers["Content-Type"] = "text/css; charset=utf-8"
-#     return r
-#
 
 @app.route('/delete_matrix/<int:idx>', methods=['POST'])
 def get_matrix_to_delete(idx):
-    global matrices_dict, matrices_str_dict, tmp_matrices, matrices_names
+    matrices_dict = database.import_from_database()
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
-    _logger.debug('before remove {}'.format(len(matrices_list)))
     matrix_name_to_delete = matrices_list.pop(idx)[0]
     database.delete_matrix(matrix_name_to_delete)
-    _logger.debug('after remove {}'.format(len(matrices_list)))
-    matrices_dict = database.import_from_database()
 
     return render_template(
         'index.html',
@@ -55,7 +44,7 @@ def get_matrix_to_delete(idx):
 
 @app.route('/create_matrix/<string:matrix>', methods=['POST'])
 def get_matrix_data_to_create(matrix):
-    global matrices_dict, matrices_str_dict, tmp_matrices, matrices_names
+    matrices_dict = database.import_from_database()
     matrix = matrix.replace('minussign', '-')
     matrix = matrix.replace('slashsign', '/')
     matrix = eval(matrix)
@@ -65,7 +54,7 @@ def get_matrix_data_to_create(matrix):
         name, rows, columns = name.upper(), int(rows), int(columns)
         new_matrix = algebra.Matrix(rows, columns, values)
         matrices_dict[name] = new_matrix
-        database.save_matrix(name)
+        database.save_matrix(name, matrices_dict)
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     return render_template(
         'index.html',
@@ -75,7 +64,7 @@ def get_matrix_data_to_create(matrix):
 
 @app.route('/get_user_input')
 def get_and_process_user_input():
-    global matrices_dict, matrices_str_dict, tmp_matrices, matrices_names
+    matrices_dict = database.import_from_database()
     user_input = str(request.args.get('user_input', '')).upper()
     replacements = {
         'PLUSSIGN': '+',
@@ -84,7 +73,7 @@ def get_and_process_user_input():
     }
     for replacement in replacements:
         user_input = user_input.replace(replacement, replacements[replacement])
-    input_processed = utils.mathjax_wrap(utils.get_input_read(user_input))
+    input_processed = utils.mathjax_wrap(utils.get_input_read(user_input, matrices_dict))
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     _logger.debug('user_input: {}'.format(user_input))

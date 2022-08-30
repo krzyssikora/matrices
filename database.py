@@ -2,20 +2,16 @@ import sqlite3
 from matrices.algebra import Matrix
 from matrices import config
 from matrices.config import _logger
-from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
+# from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
 
 
 def import_from_database():
     """Imports matrices from database to the global dictionary matrices_dict."""
+    matrices_dict = dict()
     conn = sqlite3.connect(config.DATABASE)
     cur = conn.cursor()
-    cur.execute('''CREATE TABLE IF NOT EXISTS matrices
-    (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-    name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
-    ''')
     cur.execute("SELECT id, name, rows, columns, denominator FROM matrices")
     all_rows = cur.fetchall()
-    ids = list()
     for matrix_data in all_rows:
         if matrix_data[1] in matrices_dict:
             continue
@@ -30,7 +26,7 @@ def import_from_database():
     return matrices_dict
 
 
-def delete_matrix(m_name, fully=True):
+def delete_matrix(m_name):
     """Deletes the matrix from the database and, optionally, from the global matrices_dict dictionary.
 
     Args:
@@ -42,12 +38,12 @@ def delete_matrix(m_name, fully=True):
     """
     conn = sqlite3.connect(config.DATABASE)
     cur = conn.cursor()
-    cur.execute('''CREATE TABLE IF NOT EXISTS matrices
-    (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-    name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
-    ''')
-    cur.execute('''CREATE TABLE IF NOT EXISTS numerators
-    (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
+    # cur.execute('''CREATE TABLE IF NOT EXISTS matrices
+    # (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
+    # name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
+    # ''')
+    # cur.execute('''CREATE TABLE IF NOT EXISTS numerators
+    # (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
     cur.execute('SELECT id FROM matrices WHERE name = ?', (m_name,))
     row = cur.fetchone()
     m_id = row[0]
@@ -55,12 +51,9 @@ def delete_matrix(m_name, fully=True):
     cur.execute('DELETE FROM numerators WHERE matrix_id = ?', (m_id,))
     conn.commit()
     cur.close()
-    if fully:
-        del matrices_dict[m_name]
-        print(f"The matrix {m_name} has been deleted from the database.")
 
 
-def save_matrix(m_name):
+def save_matrix(m_name, matrices_dict):
     """Saves the matrix in the database.
 
         Args:
@@ -68,18 +61,22 @@ def save_matrix(m_name):
 
         Returns None if the matrix was not added to the global matrices_dic dictionary.
     """
-    conn = sqlite3.connect(config.DATABASE)
-    cur = conn.cursor()
-    cur.execute('''CREATE TABLE IF NOT EXISTS matrices
-    (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-    name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
-    ''')
-    cur.execute('''CREATE TABLE IF NOT EXISTS numerators
-    (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
+    # conn = sqlite3.connect(config.DATABASE)
+    # cur = conn.cursor()
+    # cur.execute('''CREATE TABLE IF NOT EXISTS matrices
+    # (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
+    # name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
+    # ''')
+    # cur.execute('''CREATE TABLE IF NOT EXISTS numerators
+    # (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
+    # conn.commit()
+    # cur.close()
 
     matrix = matrices_dict.get(m_name, None)
     if matrix is None:
         return None
+    conn = sqlite3.connect(config.DATABASE)
+    cur = conn.cursor()
     cur.execute('SELECT id FROM matrices WHERE name = ?', (m_name,))
     row = cur.fetchone()
     if row is None:
