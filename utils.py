@@ -1,12 +1,16 @@
 from matrices import database, algebra, config
 from matrices.config import _logger
-from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
+
+
+def mathjax_wrap(ltx_string):
+    return r'\( {} \)'.format(ltx_string)
 
 
 def get_list_of_matrix_dict_latexed(m_dict):
     m_list = list()
     for name, matrix in m_dict.items():
-        m_list.append((name, '\({}={}\)'.format(name, matrix.get_latex_form())))
+        m_list.append((name, mathjax_wrap('{}={}'.format(name, matrix.get_latex_form()))))
+        # m_list.append((name, '\({}={}\)'.format(name, matrix.get_latex_form())))
     return m_list
 
 
@@ -172,26 +176,14 @@ def insert_latex_multiplications(input_string):
 
 
 def change_latex_restricted_words(input_string):
-    for restricted_word in {'det'}:
+    for restricted_word in {'rref', 'del', 'aug', 'sub', 'det'}:
         word = restricted_word.upper()
-        pos = -1
-        while True:
-            pos = input_string.find(word, pos + 1)
-            if pos < 0:
-                break
-            input_string = input_string[:pos] + '\{} '.format(word.lower()) + input_string[pos + len(word):]
-
-    for restricted_word in {'rref', 'del', 'aug', 'sub'}:
-        word = restricted_word.upper()
-        _logger.debug('word: {}'.format(word))
         pos = -6 - len(word)
         while True:
             pos = input_string.find(word, pos + len(word) + 6)
-            _logger.debug('pos: {}'.format(pos))
             if pos < 0:
                 break
             input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[pos + len(word):]
-            _logger.debug('input_string: {}'.format(input_string))
 
     for restricted_word_with_prefix in {('ref', 'r')}:
         restricted_word, prefix = restricted_word_with_prefix
@@ -232,17 +224,15 @@ def get_input_read(inp, matrices_dict):
                                 0)
 
     # todo temp:
-    assign_answer = [False, None, None]
+    assign_answer = [False, False, '']
 
     # if result in {"q", "e"}: quit() todo these have to be changed in read_input, too
 
     return_string = ''
     if result is None:
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
-        assign_answer = [False, False, '']
     elif isinstance(result, tuple) and result[0] is None:
         return_string = result[1] + '\\text{ I cannot perform the operation requested. Try again.}'
-        assign_answer = [False, False, ""]
     elif isinstance(result, str):
         return_string = result
     else:
@@ -251,12 +241,14 @@ def get_input_read(inp, matrices_dict):
             if len(assign_answer) > 0 and assign_answer[0]:  # answer is to be stored
                 matrices_dict.update({assign_answer[2]: result})
                 if assign_answer[1]:  # answer is to overwrite an existing matrix
-                    database.delete_matrix(assign_answer[2], False)
-                    return_string += '\\text{{ The result was stored in the existing matrix }}{}.'.format(assign_answer[2])
+                    database.delete_matrix(assign_answer[2])
+                    # todo: there  was an argument False, so that the name is not deleted from matrices_dict,
+                    #  then global variable
+                    return_string += '\\text{{ The result was stored ' \
+                                     'in the existing matrix }}{}.'.format(assign_answer[2])
                 else:
                     return_string += '{{ The result was stored in the new matrix }}{}.'.format(assign_answer[2])
-                database.save_matrix(assign_answer[2])
-                assign_answer = [False, False, ""]
+                database.save_matrix(assign_answer[2], matrices_dict)
         elif isinstance(result, tuple):
             if result[1] == 1:
                 return_string = str(result[0])
@@ -266,7 +258,6 @@ def get_input_read(inp, matrices_dict):
                 return_string += '\n\\text{Only matrices can be stored.}'
 
     return return_string
-
 
 
 def matrix_help_general_menu():
@@ -362,10 +353,6 @@ def matrix_help_command(help_command):
         return ""
     else:
         return None
-
-
-def mathjax_wrap(ltx_string):
-    return '\( {} \)'.format(ltx_string)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,6 @@ import sqlite3
 from matrices.algebra import Matrix
 from matrices import config
 from matrices.config import _logger
-# from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
 
 
 def import_from_database():
@@ -31,19 +30,13 @@ def delete_matrix(m_name):
 
     Args:
         m_name (str): A name, as in matrices_dict, not an actual object.
-        fully (bool) - whether to delete from the matrices_dict, too
-        fully = False is used in case of overwriting, i.e. creating a new matrix and storing it on an existing one.
-        In such a case the matrix previously labeled with this name should be removed from the database,
-        but in the dictionary an update is sufficient.
+        # todo: this is removed, but stayed in utils.get_input_read
+        #   fully = False is used in case of overwriting, i.e. creating a new matrix and storing it on an existing one.
+        #   In such a case the matrix previously labeled with this name should be removed from the database,
+        #   but in the dictionary an update is sufficient.
     """
     conn = sqlite3.connect(config.DATABASE)
     cur = conn.cursor()
-    # cur.execute('''CREATE TABLE IF NOT EXISTS matrices
-    # (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-    # name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
-    # ''')
-    # cur.execute('''CREATE TABLE IF NOT EXISTS numerators
-    # (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
     cur.execute('SELECT id FROM matrices WHERE name = ?', (m_name,))
     row = cur.fetchone()
     m_id = row[0]
@@ -58,23 +51,13 @@ def save_matrix(m_name, matrices_dict):
 
         Args:
             m_name (str): A name, as in matrices_dict, not an actual object.
+            matrices_dict (dict):
 
-        Returns None if the matrix was not added to the global matrices_dic dictionary.
+        # Returns None if the matrix was not added to the global matrices_dic dictionary.
     """
-    # conn = sqlite3.connect(config.DATABASE)
-    # cur = conn.cursor()
-    # cur.execute('''CREATE TABLE IF NOT EXISTS matrices
-    # (id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-    # name STRING, rows INTEGER, columns INTEGER, denominator INTEGER)
-    # ''')
-    # cur.execute('''CREATE TABLE IF NOT EXISTS numerators
-    # (matrix_id INTEGER, row INTEGER, column INTEGER, element INTEGER)''')
-    # conn.commit()
-    # cur.close()
-
     matrix = matrices_dict.get(m_name, None)
     if matrix is None:
-        return None
+        return
     conn = sqlite3.connect(config.DATABASE)
     cur = conn.cursor()
     cur.execute('SELECT id FROM matrices WHERE name = ?', (m_name,))

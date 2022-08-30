@@ -103,11 +103,13 @@ def get_sum_of_fractions(numerator_1, denominator_1, numerator_2, denominator_2)
     return get_fraction_cancelled_down(numerator_1 * factor_1 + numerator_2 * factor_2, common_denominator)
 
 
-def find_starting_index_of_matrix_name_in_string(input_string, matrices_dict, position_after=None):
+def find_starting_index_of_matrix_name_in_string(input_string, matrices_dict, tmp_matrices, position_after=None):
     """Finds a starting index of a matrix name.
     Checks for names in both matrices_dict and in tmp_matrices
 
     Args:
+        tmp_matrices:
+        matrices_dict:
         input_string (str): A string to be searched.
         position_after (int): An index just after the possible matrix name.
 
@@ -188,7 +190,7 @@ def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_ch
     return ret
 
 
-def correct_matrix_name(matrix_name_as_string):
+def correct_matrix_name(matrix_name_as_string, matrices_dict):
     # todo: redundant? Seems so, as implemented in JS, but also below in read_input.invalid_assignment_variable,
     #  but this can be easily refactored. Two ideas for this:
     #  1. add save button to results, below will not be needed (save numbers, too?)
@@ -230,11 +232,14 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
     """Changes the input (inp) into an answer - a matrix, a fraction (tuple) or None with an additional error message.
 
     Args:
+        tmp_fractions:
+        tmp_matrices:
+        matrices_dict:
         inp (str): User's input to be analyzed.
         input_iteration (int): Shows the depth of recursion.
             (restricted characters are checked only for iteration = 0)
     """
-    global assign_answer #, tmp_matrices, tmp_fractions
+    global assign_answer  # tmp_matrices, tmp_fractions
     # todo: remove global variables
     # a few auxiliary functions
 
@@ -242,6 +247,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         """Deals with commands that do not result in a matrix or a number.
 
         Args:
+            matrices_dict:
             input_string (str): User's input to be analyzed.
 
         Returns:
@@ -324,7 +330,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         if "=" in input_string:
             equal_sign_position = input_string.find("=")
             inp_new_variable = input_string[:equal_sign_position]
-            correct, stderr = correct_matrix_name(inp_new_variable)
+            correct, stderr = correct_matrix_name(inp_new_variable, matrices_dict)
             if "in use" in stderr:  # correct_matrix_name returns False, as the name is in use
                 correct = True
             if correct:
@@ -501,7 +507,8 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                                 return None
                         else:
                             return None
-                        m_result = Matrix(rows, columns, random_assignment=True)
+                        m_result = Matrix(rows, columns)
+                        # todo: it was: m_result = Matrix(rows, columns, random_assignment=True)
                         if assign_answer[0]:
                             assign_answer[0] = False
                             print("Matrix " + assign_answer[2] + ":")
@@ -554,7 +561,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
 
     # TODO: documentation here
     # TODO: make it shorter
-    def power(input_string, matrices_dict):
+    def power(input_string, matrices_dict, tmp_matrices):
         # deals with "^" in the input
         nonlocal brackets, brackets_open, brackets_close, input_iteration
         if input_string is None:
@@ -604,7 +611,10 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 # base is an expression in brackets
                 pos_base0 = brackets[brackets_close.index(pos_base1)][0]
             else:
-                pos_base0 = find_starting_index_of_matrix_name_in_string(input_string, matrices_dict, pos_base1 + 1)
+                pos_base0 = find_starting_index_of_matrix_name_in_string(input_string,
+                                                                         matrices_dict,
+                                                                         tmp_matrices,
+                                                                         pos_base1 + 1)
                 if pos_base0 == -1:
                     # base is without brackets, it is not a matrix, so it must be a positive integer
                     pos_base0 = pos_base1
@@ -814,6 +824,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         either a matrix or a number.
 
         Args:
+            matrices_dict:
             input_string (str): A string to be searched through.
 
         Returns:
@@ -866,7 +877,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         if inp == "":
             return ""  # everything is fine, but all already done
     inp = rearrange_spaces_and_brackets(inp)
-    inp = power(inp, matrices_dict)
+    inp = power(inp, matrices_dict, tmp_matrices)
     if inp is None:
         return None, "\\text{A power cannot be evaluated.}"
     inp = rearrange_spaces_and_brackets(inp)
@@ -1003,7 +1014,7 @@ class Matrix:
             beginning_of_matrix, end_of_matrix = "[[", "]]"
         elif output_form in output_latex:
             separator, beginning_of_row, end_of_row = "& ", "", "\\\\ "
-            beginning_of_matrix, end_of_matrix = r"\begin{pmatrix}", "\end{pmatrix}"
+            beginning_of_matrix, end_of_matrix = r"\begin{pmatrix}", r"\end{pmatrix}"
         return_string = ""
         for row in range(self.rows):
             if row == 0:
@@ -1437,6 +1448,3 @@ if __name__ == '__main__':
     matrix_vals = [matrix_vals[:3], matrix_vals[3:]]
     m = Matrix(2, 3, matrix_vals)
     print(m.get_latex_form())
-    mat1 = EmptyMatrix(Matrix(), 3, 3)
-    mat1.identity()
-    print(mat1.get_latex_form())
