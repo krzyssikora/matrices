@@ -406,8 +406,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         """
         nonlocal brackets, brackets_open, brackets_close, input_iteration
         if number_of_parameters == 1:
-            return_value = read_input(input_string, matrices_dict, tmp_matrices, tmp_fractions, input_iteration + 1)
-            if return_value is None or (isinstance(return_value, tuple) and return_value[0] is None):
+            return_status, return_value, assign_ans = read_input(input_string,
+                                                                 matrices_dict,
+                                                                 tmp_matrices,
+                                                                 tmp_fractions,
+                                                                 input_iteration + 1)
+            if not return_status:
                 return None
             else:
                 return [return_value]
@@ -420,12 +424,10 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
             if pos == -1:
                 return None
             # head is the part before the chosen comma
-            head = read_input(input_string[:pos], matrices_dict, tmp_matrices, tmp_fractions, input_iteration + 1)
+            head_status, head, assign_ans = read_input(input_string[:pos], matrices_dict, tmp_matrices, tmp_fractions, input_iteration + 1)
             # tail is the rest, split recursively
             tail = multiple_input(input_string[pos + 1:], number_of_parameters - 1)
-            if head is None or tail is None:
-                continue
-            elif isinstance(head, tuple) and head[0] is None:
+            if not head_status or tail is None:
                 continue
             elif isinstance(tail, tuple) and tail[0] is None:
                 continue
@@ -522,12 +524,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                             return ""
                 # then functions without an input
                 else:
-                    func_input = read_input(input_string[pos1 + 1: pos2],
-                                            matrices_dict,
-                                            tmp_matrices,
-                                            tmp_fractions,
-                                            input_iteration + 1)
-                    if func_input is None or (isinstance(func_input, tuple) and func_input[0] is None):
+                    func_status, func_input, assign_ans = read_input(input_string[pos1 + 1: pos2],
+                                                                     matrices_dict,
+                                                                     tmp_matrices,
+                                                                     tmp_fractions,
+                                                                     input_iteration + 1)
+                    if not func_status:
                         return None
                     elif isinstance(func_input, tuple):
                         return None  # argument of the function is a tuple
@@ -592,17 +594,17 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                         return None
             if exponent is None:
                 # power is not T, (T) nor (-1), it must be an integer then
-                power_val = read_input(input_string[pos_power0: pos_power1 + 1],
-                                       matrices_dict,
-                                       tmp_matrices,
-                                       tmp_fractions,
-                                       input_iteration + 1)
+                power_status, power_val, assign_ans = read_input(input_string[pos_power0: pos_power1 + 1],
+                                                                 matrices_dict,
+                                                                 tmp_matrices,
+                                                                 tmp_fractions,
+                                                                 input_iteration + 1)
                 if isinstance(power_val, tuple) and power_val[1] == 1:
                     exponent = power_val[0]
                     try:
                         exponent = int(exponent)
                     except Exception as e:
-                        print(e)
+                        _logger.error('Incorrect power. {}'.format(e))
                         return None
             # isolates the base of the power
             if pos_base1 in brackets_close:
@@ -621,11 +623,11 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     pos_base0 += 1
                     if pos_base0 > pos_base1:
                         return None
-            base_val = read_input(input_string[pos_base0: pos_base1 + 1],
-                                  matrices_dict,
-                                  tmp_matrices,
-                                  tmp_fractions,
-                                  input_iteration + 1)
+            base_status, base_val, assign_ans = read_input(input_string[pos_base0: pos_base1 + 1],
+                                                           matrices_dict,
+                                                           tmp_matrices,
+                                                           tmp_fractions,
+                                                           input_iteration + 1)
             if isinstance(base_val, tuple):
                 if exponent < 0:
                     base_val = (base_val[1], base_val[0])
@@ -687,13 +689,13 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 break
         brackets_mut_exc.sort(reverse=True)
         for elt in brackets_mut_exc:
-            m_result = read_input(input_string[elt[0]: elt[1] + 1],
-                                  matrices_dict,
-                                  tmp_matrices,
-                                  tmp_fractions,
-                                  input_iteration + 1)
+            m_status, m_result, assign_ans = read_input(input_string[elt[0]: elt[1] + 1],
+                                                        matrices_dict,
+                                                        tmp_matrices,
+                                                        tmp_fractions,
+                                                        input_iteration + 1)
             m_name = None
-            if m_result is None or (isinstance(m_result, tuple) and m_result[0] is None):
+            if not m_status:
                 return None
             elif isinstance(m_result, tuple):
                 m_name = "F_" + str(len(tmp_fractions))
@@ -754,11 +756,11 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     last_operation_position = pos
                     operation = op
         if last_operation_position >= 0:  # divide into smaller pieces
-            m2 = read_input(input_string[last_operation_position + 1:],
-                            matrices_dict,
-                            tmp_matrices,
-                            tmp_fractions,
-                            input_iteration + 1)
+            m2_status, m2, assign_ans = read_input(input_string[last_operation_position + 1:],
+                                                   matrices_dict,
+                                                   tmp_matrices,
+                                                   tmp_fractions,
+                                                   input_iteration + 1)
             if last_operation_position == 0 and operation == "-":
                 if isinstance(m2, Matrix):
                     m1 = EmptyMatrix(m2)
@@ -767,13 +769,14 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     m1 = (0, 1)
                 else:
                     return None
+                m1_status = True
             else:
-                m1 = read_input(input_string[0: last_operation_position],
-                                matrices_dict,
-                                tmp_matrices,
-                                tmp_fractions,
-                                input_iteration + 1)
-            if m1 is None or m2 is None:
+                m1_status, m1, assign_ans = read_input(input_string[0: last_operation_position],
+                                                       matrices_dict,
+                                                       tmp_matrices,
+                                                       tmp_fractions,
+                                                       input_iteration + 1)
+            if m1 is None or not m2_status or not m1_status:
                 return None
             try:
                 if (isinstance(m1, tuple) and m1[0] is None) or (isinstance(m2, tuple) and m2[0] is None):

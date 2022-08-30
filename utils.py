@@ -246,7 +246,7 @@ def get_input_read(inp, matrices_dict):
             else:
                 return_string = '\\frac{{{}}}{{{}}}'.format(result[0], result[1])
             if assign_answer[0]:
-                return_string += '\n\\text{Only matrices can be stored.}'
+                return_string += '\n\\text{, only matrices can be stored.}'
 
     return return_string
 
