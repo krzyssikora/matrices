@@ -7,6 +7,7 @@
   --standard-margin-padding: 10px;
   --left-width: calc(70% - 2 * var(--items-padding));
   --right-width: calc(30% - 2 * var(--items-padding));
+  --new-matrix-button-height: 45px;
   /* colours */
   --colour-left: rgb(253, 248, 207);
   --colour-right: rgb(207, 237, 255);
@@ -77,6 +78,7 @@ body {
 
 /* Designing for scroll-bar */
 ::-webkit-scrollbar {
+  z-index: 1;
   width: 6px;
   height: 6px;
 }
@@ -108,6 +110,7 @@ body {
 .section-content {
   /* margin-top: calc(var(--section-header-height) + var(--navbar-height)); */
   margin-top: var(--section-header-height);
+  margin-bottom: var(--new-matrix-button-height);
 }
 
 #algebra {
@@ -197,6 +200,10 @@ span#clearfieldicon span:hover {
   margin-bottom: 0;
 }
 
+#storage .app-answer {
+  cursor: pointer;
+}
+
 .pop-up-form-label {
   display: block;
   min-width: 300px;
@@ -227,6 +234,27 @@ span#clearfieldicon span:hover {
   background: var(--colour-right);
   height: var(--section-height);
   overflow: auto;
+}
+
+#add-matrix {
+  position: fixed; 
+  margin-left: calc(-1 * var(--items-padding));
+  width: calc(var(--right-width) - 2 * var(--standard-margin-padding));
+  height: calc(var(--new-matrix-button-height) - 2*var(--standard-margin-padding));
+  bottom: calc(var(--standard-margin-padding) + var(--items-padding));
+  background-color: var(--colour-navbar-background);
+  padding: var(--standard-margin-padding);
+  border: 1px solid var(--colour-navbar-background-hover);
+  font-weight: bold;
+  font-size: large;
+  color: var(--colour-navbar-text);
+  text-align: center;
+  cursor: pointer;
+}
+
+#add-matrix:hover {
+  background-color: var(--colour-navbar-background-hover);
+  color: var(--colour-navbar-text-hover);
 }
 
 
