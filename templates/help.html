@@ -1,4 +1,22 @@
 {% extends "navbar.html" %}
 {% block navbar %}
-help info will be displayed here
+<div class="main">
+    <div id="general-help"><h1 class="section-header" id="help-header">general help menu</h1>
+        <div class="section-content">
+            <div class="help-chunk">
+                {% for row in help_content['help_info'] %}
+                <div>{{ row }}</div>
+                {% endfor %}
+            </div>
+            
+            <div class="help-chunk">
+                <table>
+                    {{ help_content['table_header']|safe}}
+                    {% for row in help_content['table_content'] %}
+                    {{ row }}
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+</div>
 {% endblock %}

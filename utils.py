@@ -222,6 +222,7 @@ def get_input_read(inp, matrices_dict):
                                                               tmp_matrices,
                                                               tmp_fractions,
                                                               0)
+    _logger.debug('result_status: {}, result: {}, assign_answer: {}'.format(result_status, result, assign_answer))
 
     return_string = ''
     refresh_storage = 0
@@ -229,6 +230,8 @@ def get_input_read(inp, matrices_dict):
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
     elif isinstance(result, str):
         return_string = result
+        if 'Matrix deleted.' in return_string:
+            refresh_storage = 1
     else:
         if isinstance(result, algebra.Matrix):
             return_string = result.get_latex_form()
@@ -253,36 +256,44 @@ def get_input_read(inp, matrices_dict):
     return return_string, refresh_storage
 
 
-def matrix_help_general_menu():
-    """Displays general help information."""
-    # prints out a table with general help hints
-    print("+--------------------+")
-    print("| General help info. |")
-    print("+--------------------+")
-    print("This app offers various operations on matrices with rational inputs,")
-    print("Let M and N be the names of matrices.")
-    print("The following are the available actions.")
-    print("To get more details type in a help command.")
-    print()
-    max_len = [0, 0, 0]
-    for i in range(len(config.help_options)):
-        for j in range(3):
-            if len(config.help_options[i][j]) > max_len[j]:
-                max_len[j] = len(config.help_options[i][j])
+def wrap_with_tag(text, tag, dom_elt_id=None, dom_elt_class=None):
+    html_id = ''
+    html_class = ''
+    if dom_elt_id:
+        html_id = ' id=\'{}\''.format(dom_elt_id)
+    if dom_elt_class:
+        html_class = ' class=\'{}\''.format(dom_elt_class)
+    return f'<{tag}{html_id}{html_class}>{text}</{tag}>'
 
-    max_len[0] += 2
-    print("+" + "-" * (max_len[0] + 4) + "+" + "-" * (max_len[1] + 2) + "+" + "-" * (max_len[2] + 2) + "+")
-    for i, line in enumerate(config.help_options):
-        str_action = line[0]
-        str_command = line[1]
-        str_help = line[2]
-        str_ast = "*" if (i != 0 and str_action != "") else " "
-        print("| " + str_ast + " " + str_action + " " * (max_len[0] - len(str_action)) + " | "
-              + str_command + " " * (max_len[1] - len(str_command))
-              + " | " + str_help + " " * (max_len[2] - len(str_help)) + " | ")
-        if i == 0:
-            print("+" + "-" * (max_len[0] + 4) + "+" + "-" * (max_len[1] + 2) + "+" + "-" * (max_len[2] + 2) + "+")
-    print("+" + "-" * (max_len[0] + 4) + "+" + "-" * (max_len[1] + 2) + "+" + "-" * (max_len[2] + 2) + "+")
+
+def get_html_from_table(table, clickable_columns=('title', 'artist /-s', 'medium', 'publisher')):
+    def get_table_row(row_content, row_id, row_tag='tr'):
+        row_string = ''
+        for cell_content in row_content:
+            row_string += wrap_with_tag(cell_content, 'td')
+        row_string = wrap_with_tag(row_string, row_tag, f'help-row-{row_id}')
+        return row_string
+
+    table_columns = table[0]
+    table_rows = table[1:]
+    table_header = ''
+    # header row
+    for cell_text in table_columns:
+        table_header += wrap_with_tag(cell_text, 'th')
+    table_header = wrap_with_tag(table_header, 'tr')
+    # other rows
+    table_content = list()
+    for idx, row in enumerate(table_rows):
+        table_content.append(get_table_row(row, idx))
+
+    return table_header, table_content
+
+
+def get_matrix_help_general_menu():
+    """Displays general help information."""
+    table_header, table_content = get_html_from_table(config.help_general_info)
+    _logger.debug('table_header: {}'.format(table_header))
+    return config.help_general_intro, table_header, table_content
 
 
 def matrix_help_command(help_command):

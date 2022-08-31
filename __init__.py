@@ -13,7 +13,8 @@ app = Flask(__name__)
 import matrices.views
 
 # todo:
-#  1. move 'add' button from navbar to storage
+#  0. add general help page
+#  1. add help pop-up
 #  2. remove nonlocal variables
 #  3. passing data from python to JS without hidden elements ?
 #  4. 'a^-1*145/3' does not work, but 'a^-1*145*(1/3)' does

@@ -3,35 +3,37 @@ import logging
 # DATABASE = "matrices/database/matrices_rational.sqlite"
 DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
 
-help_options = [["action", "command/-s", "help command"],
-                ["clear screen", "cls", "help cls"],
-                ["multiply by a scalar", "2 * M, 1/2 * M, 1.2 * M, N = 5/2 * M", "help *"],
-                ["add matrices", "M + N", "help +"],
-                ["subtract matrices", "M - N", "help -"],
-                ["multiply matrices", "M * N", "help *"],
-                ["determinant of a matrix", "det(M)", "help det"],
-                ["inverse of a matrix", "M^(-1)", "help inv"],
-                ["transpose of a matrix", "M^T", "help T"],
-                ["augment a matrix with another", "aug(M, N)", "help aug"],
-                ["sub-matrix", "sub(M, rows, columns) - from top left or", "help sub"],
-                ["", "sub(M, r0, r1, c0, c1)", ""],
-                ["", " - rows from r0 to r1 inclusive", ""],
-                ["", " - columns from c0 to c1 inclusive", ""],
-                ["row echelon form", "ref(M)", "help ref"],
-                ["reduced row echelon form", "rref(M)", "help rref"],
-                ["assign result to a matrix", "M = ...", "help ="],
-                ["", "(both to a new or existing matrix)", ""],
-                ["create a new matrix", "create", "help create"],
-                ["delete a matrix from memory and database", "del M, del(M)", "help del"],
-                ["       or a few matrices at once", "del(M, N)", ""],
-                ["change a matrix into a form that", "wolframalpha(M)", "help wolframalpha"],
-                ["       can be used in wolframalpha.com", "", ""],
-                ["", "", ""],
-                ["", "(brackets may be used)", ""],
-                ["", "(but only the round ones)", ""],
-                ["", "", ""],
-                ["end application", "end, quit, exit, out", "help end"]
-                ]
+help_general_intro = ['This app offers various operations on matrices with rational inputs.',
+                      'Let M and N be the names of matrices.',
+                      'The following are the available actions.',
+                      'To get more details type a help command in the algebra window.']
+
+help_general_info = [["action", "command/-s", "help command"],
+                     ["clear screen", "cls", "help cls"],
+                     ["multiply by a scalar", "2 * M, 1/2 * M, 1.2 * M, N = 5/2 * M", "help *"],
+                     ["add matrices", "M + N", "help +"],
+                     ["subtract matrices", "M - N", "help -"],
+                     ["multiply matrices", "M * N", "help *"],
+                     ["determinant of a matrix", "det(M)", "help det"],
+                     ["inverse of a matrix", "M^(-1)", "help inv"],
+                     ["transpose of a matrix", "M^T", "help T"],
+                     ["augment a matrix with another", "aug(M, N)", "help aug"],
+                     ["sub-matrix", "sub(M, rows, columns) - from top left or </br>"
+                                    "sub(M, r0, r1, c0, c1) </br>"
+                                    "- rows from r0 to r1 inclusive </br>"
+                                    "- columns from c0 to c1 inclusive", "help sub"],
+                     ["row echelon form", "ref(M)", "help ref"],
+                     ["reduced row echelon form", "rref(M)", "help rref"],
+                     ["assign result to a matrix", "M = ...</br>"
+                                                   "(both to a new or existing matrix)", "help ="],
+                     ["create a new matrix", "create", "help create"],
+                     ["delete a matrix from memory and database", "del M, del(M)", "help del"],
+                     ["       or a few matrices at once", "del(M, N)", ""],
+                     # ["change a matrix into a form that", "wolframalpha(M)", "help wolframalpha"],
+                     # ["       can be used in wolframalpha.com", "", ""],
+                     ["", "// brackets may be used, </br> but only the round ones", ""],
+                     # ["end application", "end, quit, exit, out", "help end"]
+                     ]
 
 help_explanations = [["CLS", "cls",
                       '''Clears the screen and prints again the names and dimensions 
@@ -69,13 +71,9 @@ help_explanations = [["CLS", "cls",
                       ['''Deletes a matrix from the memory and from the database.''',
                        '''Deletes a few matrices from the database. Their names should be separated
                        by commas and they should be identical to those listed.''']],
-                     ["QUIT", "quit, exit, out", '''Quits to the main menu.'''],
-                     ["END", "end", '''Ends the application.'''],
-                     ["WOLFRAMALPHA", "wolframalpha(M)",
-                      "Changes the matrix M into a form that can be copied and pasted into wolframalpha.com. "
-                      "An input M can be also an expression that results in a matrix."],
-                     ["QUIT", "quit", '''Ends the application.'''],
-                     ["EXIT", "exit", '''Ends the application.'''],
+                     # ["WOLFRAMALPHA", "wolframalpha(M)",
+                     #  "Changes the matrix M into a form that can be copied and pasted into wolframalpha.com. "
+                     #  "An input M can be also an expression that results in a matrix."],
                      ["out", "out", '''Ends the application.''']
                      ]
 

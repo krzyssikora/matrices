@@ -1,7 +1,7 @@
 from matrices import app
 from matrices import database, utils, algebra
 from matrices.config import _logger
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, Markup
 import git
 
 
@@ -76,7 +76,7 @@ def get_and_process_user_input():
     input_processed = utils.mathjax_wrap(input_processed_without_mathjax_wrap)
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
-    _logger.debug('refresh_storage: {}'.format(refresh_storage))
+    _logger.debug('input_processed_without_mathjax_wrap: {}'.format(input_processed_without_mathjax_wrap))
     return jsonify({
         'matrices_list': matrices_list,
         'input_processed': input_processed,
@@ -86,5 +86,14 @@ def get_and_process_user_input():
 
 
 @app.route('/help')
-def help():
-    return render_template('help.html')
+def general_help():
+    help_info, table_header, table_content = utils.get_matrix_help_general_menu()
+    help_content = {
+        'help_info': help_info,
+        'table_header': Markup(table_header),
+        'table_content': [Markup(row) for row in table_content],
+    }
+    _logger.debug('help_content: {}'.format(help_content))
+    return render_template('help.html',
+                           help_content=help_content,
+                           )

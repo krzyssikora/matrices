@@ -1,7 +1,5 @@
 import math
-from matrices.config import help_options, help_explanations
 from matrices import database, utils, config
-# from matrices import matrices_dict, matrices_str_dict, tmp_matrices, matrices_names, assign_answer
 from matrices.config import _logger
 
 
@@ -47,7 +45,7 @@ def get_fraction_from_string(fraction_as_string):
         den = int(den / div)
         return numerator, den
     except Exception as e:
-        _logger.debug(e)
+        _logger.error(e)
         return None, None
 
 
@@ -265,7 +263,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 m_name = ""
             if m_name in matrices_dict:
                 database.delete_matrix(m_name)
-                return ""
+                return "\\text{Matrix deleted.}"
             else:
                 # or a few matrices
                 terms = m_name.count(",") + 1
@@ -283,7 +281,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                             ind = mats.index(mat)
                             database.delete_matrix(names[ind])
                     return ""
-                return None, f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
+                return f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
         elif input_string.startswith("HELP"):
             # todo: change it to displaying help message
             # displays help commands
@@ -789,7 +787,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 elif operation == "-":
                     return m1.subtract_matrix(m2)
                 elif operation == "*":
-                    return m1.multiply_matrix(m2)
+                    product_of_matrices = m1.multiply_matrix(m2)
+                    if product_of_matrices:
+                        return m1.multiply_matrix(m2)
+                    else:
+                        return '\\text{The matrices cannot be multiplied.}'
+                    # todo: make it similar for other operations
                 else:
                     return None
             elif type(m1) == tuple and type(m2) == tuple:
@@ -897,7 +900,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
     inp = splitting_operations(inp, 1)
     if not isinstance(inp, str):
         return True, inp, assign_answer
-    return True, simple_object(inp, matrices_dict), assign_answer
+
+    simple_obj = simple_object(inp, matrices_dict)
+    if simple_obj:
+        return True, simple_object(inp, matrices_dict), assign_answer
+    else:
+        return False, '', assign_answer
 
 
 class Matrix:
