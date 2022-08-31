@@ -3,7 +3,8 @@ import logging
 # DATABASE = "matrices/database/matrices_rational.sqlite"
 DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
 
-help_general_intro = ['This app offers various operations on matrices with rational inputs.',
+help_general_intro = ['This app offers various operations on matrices with rational inputs. '
+                      'It accepts both fractions and decimals.', ' ',
                       'Let M and N be the names of matrices.',
                       'The following are the available actions.',
                       'To get more details type a help command in the algebra window.']
