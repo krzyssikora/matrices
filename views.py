@@ -72,13 +72,16 @@ def get_and_process_user_input():
     }
     for replacement in replacements:
         user_input = user_input.replace(replacement, replacements[replacement])
-    input_processed = utils.mathjax_wrap(utils.get_input_read(user_input, matrices_dict))
+    input_processed_without_mathjax_wrap, refresh_storage = utils.get_input_read(user_input, matrices_dict)
+    input_processed = utils.mathjax_wrap(input_processed_without_mathjax_wrap)
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
+    _logger.debug('refresh_storage: {}'.format(refresh_storage))
     return jsonify({
         'matrices_list': matrices_list,
         'input_processed': input_processed,
         'input_latexed': input_latexed,
+        'refresh_storage': refresh_storage,
     })
 
 

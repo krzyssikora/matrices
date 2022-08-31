@@ -156,12 +156,17 @@ var algebra_content;
         var url = '/get_user_input?user_input=' + initial_text;
         var in_text;
         var out_text;
+        var refresh_storage;
 
         ajax_get(url, function(data) {
             matrices_names = data['matrices_names'];
 //            'matrices_list': matrices_list,       todo hidden in index.html under id=storage-latexed
             in_text = data['input_latexed'];
             out_text = data['input_processed'];
+            refresh_storage = data['refresh_storage'];
+            if (refresh_storage == 1) {
+                updateStorage();
+            };
             var new_element = createAlgebraChunk(in_text, out_text);
             var container = algebra_box.querySelector('.section-content');
             var last_child = document.getElementById('clearfieldicon');
@@ -178,7 +183,6 @@ var algebra_content;
         if (key == 13) {
             e.preventDefault();
             getDataFromUserInput();
-            updateStorage();
         }
     })
 

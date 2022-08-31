@@ -224,6 +224,7 @@ def get_input_read(inp, matrices_dict):
                                                               0)
 
     return_string = ''
+    refresh_storage = 0
     if not result_status:
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
     elif isinstance(result, str):
@@ -231,7 +232,8 @@ def get_input_read(inp, matrices_dict):
     else:
         if isinstance(result, algebra.Matrix):
             return_string = result.get_latex_form()
-            if len(assign_answer) > 0 and assign_answer[0]:  # answer is to be stored
+            if assign_answer[0]:  # answer is to be stored
+                refresh_storage = 1
                 matrices_dict.update({assign_answer[2]: result})
                 if assign_answer[1]:  # answer is to overwrite an existing matrix
                     database.delete_matrix(assign_answer[2])
@@ -248,7 +250,7 @@ def get_input_read(inp, matrices_dict):
             if assign_answer[0]:
                 return_string += '\n\\text{, only matrices can be stored.}'
 
-    return return_string
+    return return_string, refresh_storage
 
 
 def matrix_help_general_menu():
