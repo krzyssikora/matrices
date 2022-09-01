@@ -264,7 +264,7 @@ span#clearfieldicon span:hover {
 }
 
 table, th, td {
-  border-bottom: 1px solid;
+  border-bottom: 1px solid black;
   border-top: 1px solid;
   padding: var(--standard-margin-padding) calc(4 * var(--standard-margin-padding));
 }
@@ -280,6 +280,12 @@ table {
 
 tr {
   padding: var(--items-padding);
+}
+
+tr:hover {
+  color: var(--colour-navbar-background-hover);
+  border-bottom: 1px solid black;
+  background-color: rgb(59, 96, 245);
 }
 
 

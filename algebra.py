@@ -135,7 +135,7 @@ def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_ch
     """Creates a list of pairs of positions of opening and closing brackets.
 
     Args:
-        input_string (str): A string to be analyzed.
+        input_string (str): A string to be parsed.
         opening_char (str): A character used for opening bracket.
         closing_char (str): A character used for closing bracket.
 
@@ -144,20 +144,8 @@ def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_ch
         #todo check if changing list to a tuple may  produce any setbacks
     """
     ret = list()
-    openings = list()
-    closings = list()
-    pos = -1
-    # creates lists of positions of opening and closing brackets
-    while True:
-        pos = input_string.find(opening_char, pos + 1)
-        if pos == -1:
-            break
-        openings.append(pos)
-    while True:
-        pos = input_string.find(closing_char, pos + 1)
-        if pos == -1:
-            break
-        closings.append(pos)
+    openings = [i for i in range(len(input_string)) if input_string[i] == opening_char]
+    closings = [i for i in range(len(input_string)) if input_string[i] == closing_char]
     if len(openings) != len(closings):
         return None
     ind = 0
@@ -179,9 +167,10 @@ def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_ch
             ret.append([opening, closing])
             openings.remove(opening)
             closings.remove(closing)
-            ind -= 1
+            ind = max(0, ind - 1)
         else:
             ind += 1
+        print(ind)
     if len(closings) > 0:
         return None
     ret.sort()
@@ -225,6 +214,25 @@ def correct_matrix_name(matrix_name_as_string, matrices_dict):
     return True, ""
 
 
+def find_last_index_of_a_digit_in_string_from_position(input_string, starting_position, left=True):
+    # it is not assumed that input_string[starting_position].isdigit()
+    step = -1 if left else 1
+    position = starting_position
+    top_limit = len(input_string) - 1
+
+    while True:
+        if position < 0 or position > top_limit:
+            break
+        if not input_string[position].isdigit():
+            break
+        position += step
+
+    ret_value = position - step
+    if (left and ret_value > starting_position) or (not left and ret_value < starting_position):
+        return None
+    return ret_value
+
+
 def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=0):
     # todo REFACTOR
     """Changes the input (inp) into an answer - a matrix, a fraction (tuple) or None with an additional error message.
@@ -237,7 +245,6 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         input_iteration (int): Shows the depth of recursion.
             (restricted characters are checked only for iteration = 0)
     """
-    # todo: remove global variables
     # a few auxiliary functions
 
     def basics(input_string, matrices_dict):
@@ -268,7 +275,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 # or a few matrices
                 terms = m_name.count(",") + 1
                 if terms > 1:
-                    multiple_inp = multiple_input(m_name, terms)
+                    multiple_inp = multiple_input(m_name, terms, input_iteration)
                     if multiple_inp is None:
                         return None, '\\text{Improper input of "del".}'
                     if isinstance(multiple_inp, list):
@@ -286,12 +293,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
             # todo: change it to displaying help message
             # displays help commands
             if len(input_string) == 4:
-                utils.matrix_help_general_menu()
+                utils.get_matrix_help_general_menu()
             else:
                 help_command = input_string[4:]
                 print("HELP COMMAND:", help_command)
                 if utils.matrix_help_command(help_command) is None:
-                    utils.matrix_help_general_menu()
+                    utils.get_matrix_help_general_menu()
                     return None, "Only help commands listed above can be used."
             return ""
         return None
@@ -315,19 +322,31 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
         return False
 
     def invalid_assignment_variable(input_string, matrices_dict):
-        """Checks if part before "=" of the user's input is a valid matrix name.
-
-        It checks also, if the potential new name is already in use.
-        The function changes the global variable assign answer, which is a list of three elements:
-        0: assign (bool) - if True, answer should be stored, if False, the other two coordinates are irrelevant,
-        1: overwrite (bool) - if True, answer overwrites an existing matrix,
-        2: name of the new matrix
         """
+        Checks if the part before "=" of the user's input is a valid matrix name.
+        It checks also, if the potential new name is already in use.
+
+        Args:
+            input_string (str): the string to be parsed
+            matrices_dict (dict): keys are matrices' names, values are objects of the class Matrix
+
+        Returns:
+            A tuple (is_invalid, assign_answer), where:
+            - is_invalid (bool):
+                True when the potential name is incorrect
+                False, when it is correct, even if already in use
+            - assign_answer (list):
+                0: assign (bool) - if True, answer should be stored, if False, the other two coordinates are irrelevant,
+                1: overwrite (bool) - if True, answer overwrites an existing matrix,
+                2: name of the new matrix
+        """
+
         assign_answer = [False, False, '']
         if "=" in input_string:
             equal_sign_position = input_string.find("=")
             inp_new_variable = input_string[:equal_sign_position]
             correct, stderr = correct_matrix_name(inp_new_variable, matrices_dict)
+            # todo: refactor the output of correct_matrix_name - the condition below makes no sense
             if "in use" in stderr:  # correct_matrix_name returns False, as the name is in use
                 correct = True
             if correct:
@@ -335,42 +354,39 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     assign_answer[1] = True  # answer is to overwrite an existing matrix
                 assign_answer[2] = inp_new_variable
             else:
-                return True, None
+                return True, assign_answer
             assign_answer[0] = True  # answer must be stored
         return False, assign_answer
 
     def rearrange_spaces_and_brackets(input_string):
         """Removes spaces obtained from replacing parts of input with simplified expressions.
 
-        Then it does bracketing again (i.e. recalls bracketing function and creates lists of opening brackets and
-        closing brackets. Changes three global variables, as listed below.
+        Then it does bracketing again (i.e. parses pairs of opening and closing brackets and creates respective lists)
 
         Args:
             input_string (str): A string to be searched through and simplified.
 
-        Returns the simplified input_string.
+        Returns the simplified input_string and three lists with brackets' indexes.
         """
-        nonlocal brackets, brackets_open, brackets_close
         input_string = input_string.replace(" ", "")
         brackets = get_pairs_of_brackets_from_string(input_string)
         if brackets is None:
             return None
         brackets_open = [x[0] for x in brackets]
         brackets_close = [x[1] for x in brackets]
-        return input_string
+        return input_string, brackets, brackets_open, brackets_close
 
-    def remove_redundant_brackets(input_string):
+    def remove_redundant_brackets(input_string, brackets):
         """Removes unnecessary brackets and does bracketing again.
 
-        it does bracketing again (i.e. recalls bracketing function and creates lists of opening brackets and
-        closing brackets. Changes three global variables, as listed below.
+        Then it does bracketing again (i.e. parses pairs of opening and closing brackets and creates respective lists)
 
         Args:
             input_string (str): A string to be searched through and simplified.
+            brackets (list): list of tuples (opening, closing) of indexes of brackets in input_string
 
-        Returns simplified input string.
+        Returns the simplified input_string and three lists with brackets' indexes.
         """
-        nonlocal brackets, brackets_open, brackets_close
         new_brackets = list()
         for elt in brackets:
             if [elt[0] - 1, elt[1] + 1] in brackets:
@@ -390,7 +406,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
             input_string = input_string.replace("(T)", "T")
         return rearrange_spaces_and_brackets(input_string)
 
-    def multiple_input(input_string, number_of_parameters):
+    def multiple_input(input_string, number_of_parameters, iteration):
         """Returns a list of terms separated by commas.
 
         A term makes sense if it is a matrix or a tuple or a string.
@@ -402,13 +418,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
              None: if there is no way to split the input into terms making sense.
              A list of terms otherwise.
         """
-        nonlocal brackets, brackets_open, brackets_close, input_iteration
         if number_of_parameters == 1:
             return_status, return_value, assign_ans = read_input(input_string,
                                                                  matrices_dict,
                                                                  tmp_matrices,
                                                                  tmp_fractions,
-                                                                 input_iteration + 1)
+                                                                 iteration + 1)
             if not return_status:
                 return None
             else:
@@ -422,9 +437,13 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
             if pos == -1:
                 return None
             # head is the part before the chosen comma
-            head_status, head, assign_ans = read_input(input_string[:pos], matrices_dict, tmp_matrices, tmp_fractions, input_iteration + 1)
+            head_status, head, assign_ans = read_input(input_string[:pos],
+                                                       matrices_dict,
+                                                       tmp_matrices,
+                                                       tmp_fractions,
+                                                       iteration + 1)
             # tail is the rest, split recursively
-            tail = multiple_input(input_string[pos + 1:], number_of_parameters - 1)
+            tail = multiple_input(input_string[pos + 1:], number_of_parameters - 1, iteration)
             if not head_status or tail is None:
                 continue
             elif isinstance(tail, tuple) and tail[0] is None:
@@ -438,8 +457,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
 
     # TODO: documentation here
     # TODO: make it shorter
-    def prefix_functions(input_string, pref, assign_answer):
-        nonlocal brackets, brackets_open, brackets_close, input_iteration
+    def prefix_functions(input_string, pref, assign_answer, brackets, brackets_open, brackets_close, input_iteration):
         # replaces functions in the input (input_string) of the form: func(...)
         # where pref = "func("
         # with an appropriate result: tmp matrix's name or a tmp fraction's name
@@ -466,10 +484,10 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 if pref in ["AUG(", "SUB(", "CREATE("]:
                     which_prefix = ["AUG(", "SUB(", "CREATE("].index(pref)
                     which_prefix += [2, 2, 0][which_prefix]
-                    multiple_inp = multiple_input(input_string[pos1 + 1: pos2], which_prefix)
+                    multiple_inp = multiple_input(input_string[pos1 + 1: pos2], which_prefix, input_iteration)
                     if multiple_inp is None and pref == "SUB(":
                         which_prefix += 2
-                        multiple_inp = multiple_input(input_string[pos1 + 1: pos2], 5)
+                        multiple_inp = multiple_input(input_string[pos1 + 1: pos2], 5, input_iteration)
                     if multiple_inp is None:
                         return None
                     elif pref == "AUG(" and isinstance(multiple_inp, list) and isinstance(multiple_inp[0], Matrix) \
@@ -559,20 +577,22 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
 
     # TODO: documentation here
     # TODO: make it shorter
-    def power(input_string, matrices_dict, tmp_matrices):
+    def power(input_string, matrices_dict, tmp_matrices, brackets, brackets_open, brackets_close, input_iteration):
         # deals with "^" in the input
-        nonlocal brackets, brackets_open, brackets_close, input_iteration
         if input_string is None:
             return None
         # 'base' of the power will be between pos_base0 and pos_base1
         # 'exponent' will be between pos_power0 and pos_power1
         m_result = m_name = None
+        how_many = 0
         while True:
-            pos_base1 = input_string.find("^") - 1
+            how_many += 1
+            pos_base1 = input_string.rfind("^") - 1
             if pos_base1 == -2:
-                return input_string
+                return input_string, brackets, brackets_open, brackets_close
             pos_power0 = pos_base1 + 2
             # isolates exponent, which should be either T or (T) or (-1) or a positive integer
+            # todo: M^(-2) should be understood as (M^-1)^2
             exponent = None
             pos_power1 = pos_power0
             if pos_power0 in brackets_open:
@@ -589,7 +609,25 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                         pos_power1 += 1
                     pos_power1 -= 1
                     if pos_power1 < pos_power0:
-                        return None
+                        # it may be also an integer stored in tmp_fractions
+                        if input_string[pos_power0:].startswith('F_'):
+                            fraction_ending_index = \
+                                find_last_index_of_a_digit_in_string_from_position(input_string,
+                                                                                   pos_power0 + 2,
+                                                                                   left=False)
+                            if fraction_ending_index:
+                                exponent = tmp_fractions.get(input_string[pos_power0: fraction_ending_index + 1], None)
+                                exponent = exponent[0] if exponent[1] == 1 else None
+                                if exponent:
+                                    input_string = input_string[:pos_power0] \
+                                                   + str(exponent) \
+                                                   + input_string[fraction_ending_index + 1:]
+                                    pos_power1 = pos_power0 + len(str(exponent)) - 1
+                                    brackets = get_pairs_of_brackets_from_string(input_string)
+                                    brackets_open = [bracket[0] for bracket in brackets]
+                                    brackets_close = [bracket[1] for bracket in brackets]
+                        else:
+                            return None
             if exponent is None:
                 # power is not T, (T) nor (-1), it must be an integer then
                 power_status, power_val, assign_ans = read_input(input_string[pos_power0: pos_power1 + 1],
@@ -616,7 +654,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 if pos_base0 == -1:
                     # base is without brackets, it is not a matrix, so it must be a positive integer
                     pos_base0 = pos_base1
-                    while pos_base0 >= 0 and ord("0") <= ord(input_string[pos_base0]) <= ord("9"):
+                    while pos_base0 >= 0 and input_string[pos_base0].isdigit():
                         pos_base0 -= 1
                     pos_base0 += 1
                     if pos_base0 > pos_base1:
@@ -633,8 +671,8 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 m_result = (1, 1)
                 for _ in range(exponent):
                     m_result = get_fraction_cancelled_down(m_result[0] * base_val[0], m_result[1] * base_val[1])
-                    m_name = "F_" + str(len(tmp_fractions))
-                    tmp_fractions.update({m_name: m_result})
+                m_name = "F_" + str(len(tmp_fractions))
+                tmp_fractions.update({m_name: m_result})
             elif isinstance(base_val, Matrix):
                 if exponent == "T":
                     m_result = base_val.transpose()
@@ -652,6 +690,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     return None
             else:
                 return None
+
             num_spaces = pos_power1 - pos_base0 + 1 - len(m_name)
             if num_spaces >= 0:
                 input_string = input_string[:pos_base0] + m_name + " " * num_spaces + input_string[pos_power1 + 1:]
@@ -663,7 +702,9 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 brackets_open = [x[0] for x in brackets]
                 brackets_close = [x[1] for x in brackets]
 
-    def read_input_recursively(input_string):
+        # return input_string, brackets, brackets_open, brackets_close
+
+    def read_input_recursively(input_string, matrices_dict, tmp_matrices, tmp_fractions, brackets, input_iteration):
         """Splits the input into pieces of mutually exclusive brackets and reads input in each one of them.
 
         Args:
@@ -671,10 +712,9 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
 
         Returns:
             simplified string, in which each expression in brackets is replaced with either a matrix name
-            (from global matrices_dict, or a temporary one from tmp_matrices) or a temporary fraction name
+            (from matrices_dict, or a temporary one from tmp_matrices) or a temporary fraction name
             (from tmp_fractions).
         """
-        nonlocal brackets, brackets_open, brackets_close, input_iteration
         brackets_mut_exc = list()
         ind = 0
         pivot = -1
@@ -710,12 +750,12 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 brackets = get_pairs_of_brackets_from_string(inp)
                 if brackets is None:
                     return None
-                brackets_open = [x[0] for x in brackets]
-                brackets_close = [x[1] for x in brackets]
-        return input_string
+        brackets_open = [x[0] for x in brackets]
+        brackets_close = [x[1] for x in brackets]
+        return input_string, brackets, brackets_open, brackets_close
 
     # TODO: can this be made shorter ?
-    def splitting_operations(input_string, operations):
+    def splitting_operations(input_string, operations, iteration):
         """Splits the input using the operations.
 
         Starts from right to ensure correct order of operations.
@@ -727,7 +767,6 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 If operations = 0, the operations considered are + and -.
                 If operations = 1, the operations considered are * and /.
         """
-        nonlocal input_iteration
         if len(input_string) > 1:
             if input_string[0] == "+" and input_string[1] not in ["+", "-", "*", "/"]:
                 input_string = input_string[1:]
@@ -758,7 +797,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                                                    matrices_dict,
                                                    tmp_matrices,
                                                    tmp_fractions,
-                                                   input_iteration + 1)
+                                                   iteration + 1)
             if last_operation_position == 0 and operation == "-":
                 if isinstance(m2, Matrix):
                     m1 = EmptyMatrix(m2)
@@ -773,7 +812,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                                                        matrices_dict,
                                                        tmp_matrices,
                                                        tmp_fractions,
-                                                       input_iteration + 1)
+                                                       iteration + 1)
             if m1 is None or not m2_status or not m1_status:
                 return None
             try:
@@ -856,7 +895,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
     assign_answer = [False, False, '']
     nothing_to_return = False, '', [False, False, '']
     inp = inp.upper().replace(" ", "")
-    basic_output = basics(inp, matrices_dict)
+    basic_output = basics(inp, matrices_dict)  # cls, del, help for now only
     if basic_output is not None:
         return True, basic_output, assign_answer
     if restricted_chars_used(inp, input_iteration):
@@ -871,33 +910,46 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
     brackets = get_pairs_of_brackets_from_string(inp)
     if brackets is None:
         return False, "Unbalanced brackets.", assign_answer
-    inp = remove_redundant_brackets(inp)
+    inp, brackets, brackets_open, brackets_close = remove_redundant_brackets(inp, brackets)
     if inp is None:
         return False, "Brackets do not match.", assign_answer
     brackets_open = [x[0] for x in brackets]
     brackets_close = [x[1] for x in brackets]
     for prefix in ["AUG(", "SUB(", "RREF(", "REF(", "DET("]:
-        inp = prefix_functions(inp, prefix, assign_answer)
+        inp = prefix_functions(inp, prefix, assign_answer, brackets, brackets_open, brackets_close, input_iteration)
         if inp is None:
             return False, f'\\text{{Improper input of "{{{prefix[:-1].lower()}}}".}}', assign_answer
         if inp == "":
             return True, "", assign_answer  # everything is fine, but all already done
-    inp = rearrange_spaces_and_brackets(inp)
-    inp = power(inp, matrices_dict, tmp_matrices)
+    inp, brackets, brackets_open, brackets_close = rearrange_spaces_and_brackets(inp)
+    _logger.debug('inp before power: {}'.format(inp))
+    inp, brackets, brackets_open, brackets_close = power(inp,
+                                                         matrices_dict,
+                                                         tmp_matrices,
+                                                         brackets,
+                                                         brackets_open,
+                                                         brackets_close,
+                                                         input_iteration)
+    _logger.debug('inp after power: {}'.format(inp))
     if inp is None:
         return False, "\\text{A power cannot be evaluated.}", assign_answer
-    inp = rearrange_spaces_and_brackets(inp)
+    inp, brackets, brackets_open, brackets_close = rearrange_spaces_and_brackets(inp)
     if len(brackets) > 0:
-        inp = read_input_recursively(inp)
+        inp, brackets, brackets_open, brackets_close = read_input_recursively(inp,
+                                                                              matrices_dict,
+                                                                              tmp_matrices,
+                                                                              tmp_fractions,
+                                                                              brackets,
+                                                                              input_iteration)
     if inp is None:
         return nothing_to_return
-    inp = splitting_operations(inp, 0)
+    inp = splitting_operations(inp, 0, input_iteration)
     if not isinstance(inp, str):
         if inp is None:
             return nothing_to_return
         else:
             return True, inp, assign_answer
-    inp = splitting_operations(inp, 1)
+    inp = splitting_operations(inp, 1, input_iteration)
     if not isinstance(inp, str):
         return True, inp, assign_answer
 
@@ -1448,10 +1500,19 @@ class EmptyMatrix(Matrix):
 
 
 if __name__ == '__main__':
-    fracs = ['1.2', '2/-3', '-4/-3', '2/3', '', '4/14']
-    matrix_vals = get_fractions_from_list_of_strings(fracs)
-    print(matrix_vals)
-    quit()
-    matrix_vals = [matrix_vals[:3], matrix_vals[3:]]
-    m = Matrix(2, 3, matrix_vals)
-    print(m.get_latex_form())
+    data = [
+        ('asfa413451avjnalsj', 9, True),
+        ('asfa413451avjnalsj', 8, True),
+        ('asfa413451avjnalsj', 10, True),
+        ('asfa413451avjnalsj', 9, False),
+        ('lsj', 9, True),
+        ('lsj', 2, True),
+        ('lsj', 2, False),
+        ('lsj', 0, False),
+    ]
+    for input_string, starting_position, left in data:
+        print('012345678901234567890')
+        print(input_string,
+              starting_position,
+              left,
+              find_last_index_of_a_digit_in_string_from_position(input_string, starting_position, left))

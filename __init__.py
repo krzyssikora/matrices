@@ -13,6 +13,7 @@ app = Flask(__name__)
 import matrices.views
 
 # todo:
+#  0. del(M) refreshes storage, but del(M, N) does not (because of multiple_input???)
 #  1. add help pop-up
 #  2. remove nonlocal variables
 #  3. passing data from python to JS without hidden elements ?

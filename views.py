@@ -76,7 +76,6 @@ def get_and_process_user_input():
     input_processed = utils.mathjax_wrap(input_processed_without_mathjax_wrap)
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
-    _logger.debug('input_processed_without_mathjax_wrap: {}'.format(input_processed_without_mathjax_wrap))
     return jsonify({
         'matrices_list': matrices_list,
         'input_processed': input_processed,
@@ -93,7 +92,6 @@ def general_help():
         'table_header': Markup(table_header),
         'table_content': [Markup(row) for row in table_content],
     }
-    _logger.debug('help_content: {}'.format(help_content))
     return render_template('help.html',
                            help_content=help_content,
                            )

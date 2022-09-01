@@ -222,7 +222,6 @@ def get_input_read(inp, matrices_dict):
                                                               tmp_matrices,
                                                               tmp_fractions,
                                                               0)
-    _logger.debug('result_status: {}, result: {}, assign_answer: {}'.format(result_status, result, assign_answer))
 
     return_string = ''
     refresh_storage = 0
@@ -266,7 +265,7 @@ def wrap_with_tag(text, tag, dom_elt_id=None, dom_elt_class=None):
     return f'<{tag}{html_id}{html_class}>{text}</{tag}>'
 
 
-def get_html_from_table(table, clickable_columns=('title', 'artist /-s', 'medium', 'publisher')):
+def get_html_from_table(table):
     def get_table_row(row_content, row_id, row_tag='tr'):
         row_string = ''
         for cell_content in row_content:
