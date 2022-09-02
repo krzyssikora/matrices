@@ -1,7 +1,7 @@
 from matrices import app
-from matrices import database, utils, algebra
+from matrices import database, utils, algebra, config
 from matrices.config import _logger
-from flask import render_template, request, jsonify, Markup
+from flask import render_template, request, jsonify, Markup, redirect, url_for
 import git
 
 
@@ -63,8 +63,18 @@ def get_matrix_data_to_create(matrix):
 
 @app.route('/get_user_input')
 def get_and_process_user_input():
+    """
+
+    Returns:
+        message_type:
+        1 - general help
+        2 - command help
+        3 - other input
+    """
     matrices_dict = database.import_from_database()
-    user_input = str(request.args.get('user_input', '')).upper()
+    user_input = str(request.args.get('user_input', '')).upper().strip()
+    if user_input == 'HELP':
+        return jsonify({'message_type': 1})
     replacements = {
         'PLUSSIGN': '+',
         'SLASHSIGN': '/',
@@ -77,12 +87,22 @@ def get_and_process_user_input():
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     return jsonify({
+        'message_type': 3,
         'matrices_list': matrices_list,
         'input_processed': input_processed,
         'input_latexed': input_latexed,
         'refresh_storage': refresh_storage,
     })
 
+
+@app.route('/get_help_command')
+def get_help_command():
+    help_command_id = int(request.args.get('help_command_id', ''))
+    command = config.help_general_info[help_command_id + 1][-1].split()[-1]
+    help_table = utils.get_matrix_help_command_menu_by_command(command)
+    return jsonify({
+        'help_table': help_table,
+    })
 
 @app.route('/help')
 def general_help():

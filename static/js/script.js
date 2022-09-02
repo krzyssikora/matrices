@@ -159,22 +159,27 @@ var algebra_content;
         var refresh_storage;
 
         ajax_get(url, function(data) {
-            matrices_names = data['matrices_names'];
-//            'matrices_list': matrices_list,       todo hidden in index.html under id=storage-latexed
-            in_text = data['input_latexed'];
-            out_text = data['input_processed'];
-            refresh_storage = data['refresh_storage'];
-            if (refresh_storage == 1) {
-                updateStorage();
+            if (data['message_type'] == 1) {
+                window.location.href = '/help';
+            } else if (data['message_type'] == 2) {
+                console.log('command help')
+            } else if (data['message_type'] == 3) {
+                matrices_names = data['matrices_names'];
+                in_text = data['input_latexed'];
+                out_text = data['input_processed'];
+                refresh_storage = data['refresh_storage'];
+                if (refresh_storage == 1) {
+                    updateStorage();
+                };
+                var new_element = createAlgebraChunk(in_text, out_text);
+                var container = algebra_box.querySelector('.section-content');
+                var last_child = document.getElementById('clearfieldicon');
+                container.insertBefore(new_element, last_child);
+                user_input_field.value = '';
+                MathJax.typeset();
+                ScrollToBottom(document.getElementById('algebra'))
+                focusOnInput();
             };
-            var new_element = createAlgebraChunk(in_text, out_text);
-            var container = algebra_box.querySelector('.section-content');
-            var last_child = document.getElementById('clearfieldicon');
-            container.insertBefore(new_element, last_child);
-            user_input_field.value = '';
-            MathJax.typeset();
-            ScrollToBottom(document.getElementById('algebra'))
-            focusOnInput();
         });
     };
 

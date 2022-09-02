@@ -1,5 +1,5 @@
 import math
-from matrices import database, utils, config
+from matrices import database, utils, views
 from matrices.config import _logger
 
 
@@ -293,7 +293,16 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
             # todo: change it to displaying help message
             # displays help commands
             if len(input_string) == 4:
-                utils.get_matrix_help_general_menu()
+                # from flask import render_template, Markup
+                # # return views.general_help()
+                # help_info, table_header, table_content = utils.get_matrix_help_general_menu()
+                # help_content = {
+                #     'help_info': help_info,
+                #     'table_header': Markup(table_header),
+                #     'table_content': [Markup(row) for row in table_content],
+                # }
+                # return render_template('help.html', help_content=help_content)
+                pass
             else:
                 help_command = input_string[4:]
                 print("HELP COMMAND:", help_command)

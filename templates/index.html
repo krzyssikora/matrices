@@ -40,7 +40,7 @@
         class="close" title="Close Modal">&times;</span>
 
         <!-- Modal Content -->
-        <form class="modal-content animate" action="index.html" method="post" id="query-name-form">
+        <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
             <div class="pop-up-form-container" id="matrix-info">
                 <div id="matrix-name-div"></div>
                 <div id="matrix-dimensions-div"></div>
@@ -61,11 +61,8 @@
     </div>
 </div>
 
-<!-- <div class="hidden-data" id="storage-latexed">{{ matrices_list }}</div> -->
 <div class="hidden-data" id="storage-names">{{ matrices_names }}</div>
-<!-- <div class="hidden-data" id="input-latexed">{{ input_latexed }}</div> -->
-<!-- <div class="hidden-data" id="input-processed">{{ input_processed }}</div> -->
-<!-- <div class="hidden-data" id="refresh-storage">{{ refresh_storage }}</div> -->
+
 <script src="{{ url_for('static', filename='js/module.js') }}"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 

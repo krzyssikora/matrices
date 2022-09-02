@@ -263,7 +263,7 @@ span#clearfieldicon span:hover {
   margin: var(--standard-margin-padding);
 }
 
-table, th, td {
+.table-general-help td, th {
   border-bottom: 1px solid black;
   border-top: 1px solid;
   padding: var(--standard-margin-padding) calc(4 * var(--standard-margin-padding));
@@ -282,15 +282,30 @@ tr {
   padding: var(--items-padding);
 }
 
-tr:hover {
+.table-general-help tbody > tr:hover {
   color: var(--colour-navbar-background-hover);
   border-bottom: 1px solid black;
   background-color: rgb(59, 96, 245);
+  cursor: pointer;
 }
 
+.table-command-help {
+  background-color: white;
+  border-bottom: solid 1px black;
+  border-top: solid 1px black;
+  width: 100%;
+  cursor: pointer;
+}
 
+.table-command-help td {
+  border-bottom: dotted 1px gray; 
+  padding: var(--standard-margin-padding) calc(4 * var(--standard-margin-padding));
+}
 
-
+.table-command-help th {
+  text-align: left;
+  vertical-align: top;
+}
 
 
 

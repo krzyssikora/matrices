@@ -256,30 +256,31 @@ def get_input_read(inp, matrices_dict):
 
 
 def wrap_with_tag(text, tag, dom_elt_id=None, dom_elt_class=None):
-    html_id = ''
-    html_class = ''
-    if dom_elt_id:
-        html_id = ' id=\'{}\''.format(dom_elt_id)
-    if dom_elt_class:
-        html_class = ' class=\'{}\''.format(dom_elt_class)
+    html_id = ' id=\'{}\''.format(dom_elt_id) if dom_elt_id else ''
+    html_class = ' class=\'{}\''.format(dom_elt_class) if dom_elt_class else ''
     return f'<{tag}{html_id}{html_class}>{text}</{tag}>'
 
 
-def get_html_from_table(table):
+def get_html_from_table(table, dom_row_id=None, with_header=True):
     def get_table_row(row_content, row_id, row_tag='tr'):
+        dom_this_row_id = f'{dom_row_id}{row_id}' if dom_row_id else None
         row_string = ''
         for cell_content in row_content:
             row_string += wrap_with_tag(cell_content, 'td')
-        row_string = wrap_with_tag(row_string, row_tag, f'help-row-{row_id}')
+        row_string = wrap_with_tag(row_string, row_tag, dom_this_row_id)
         return row_string
 
-    table_columns = table[0]
-    table_rows = table[1:]
-    table_header = ''
-    # header row
-    for cell_text in table_columns:
-        table_header += wrap_with_tag(cell_text, 'th')
-    table_header = wrap_with_tag(table_header, 'tr')
+    if with_header:
+        table_columns = table[0]
+        table_rows = table[1:]
+        table_header = ''
+        # header row
+        for cell_text in table_columns:
+            table_header += wrap_with_tag(cell_text, 'th')
+        table_header = wrap_with_tag(table_header, 'tr')
+    else:
+        table_rows = table
+        table_header = None
     # other rows
     table_content = list()
     for idx, row in enumerate(table_rows):
@@ -288,10 +289,20 @@ def get_html_from_table(table):
     return table_header, table_content
 
 
+def get_matrix_help_command_menu_by_idx(idx):
+    table = config.help_commands[idx][1:][0]
+    header_none, html_table = get_html_from_table(table, with_header=False)
+    return ''.join(html_table)
+
+
+def get_matrix_help_command_menu_by_command(command):
+    idx = [elt[0] for elt in config.help_commands].index(command.upper())
+    return get_matrix_help_command_menu_by_idx(idx)
+
+
 def get_matrix_help_general_menu():
     """Displays general help information."""
-    table_header, table_content = get_html_from_table(config.help_general_info)
-    _logger.debug('table_header: {}'.format(table_header))
+    table_header, table_content = get_html_from_table(config.help_general_info, 'help-row-')
     return config.help_general_intro, table_header, table_content
 
 
@@ -306,10 +317,10 @@ def matrix_help_command(help_command):
         None otherwise.
     """
     help_commands = list()
-    for elt in config.help_explanations:
+    for elt in config.help_commands:
         help_commands.append(elt[0])
     if help_command in help_commands:
-        our_line = config.help_explanations[help_commands.index(help_command)]
+        our_line = config.help_commands[help_commands.index(help_command)]
         both_lists = [list(), list()]
         for i in [1, 2]:
             if isinstance(our_line[i], str):
