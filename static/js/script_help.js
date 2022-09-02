@@ -1,3 +1,13 @@
+var showHelpCommandInfo = function(helpTable) {
+    document.getElementById('help-command').style.display = 'block';
+    var domHelpTable = document.getElementById('help-command-table');
+    domHelpTable.innerHTML = helpTable;
+    domHelpTable.addEventListener('click', function() {
+        document.getElementById('help-command').style.display = 'none';
+    })
+};
+
+
 (function() {
     "use strict";
 
@@ -17,15 +27,6 @@
 
         xmlhttp.open("GET", url, true);
         xmlhttp.send();
-    };
-
-    var showHelpCommandInfo = function(helpTable) {
-        document.getElementById('help-command').style.display = 'block';
-        var domHelpTable = document.getElementById('help-command-table');
-        domHelpTable.innerHTML = helpTable;
-        domHelpTable.addEventListener('click', function() {
-            document.getElementById('help-command').style.display = 'none';
-        })
     };
 
     $('[id*="help-row"]').click((e) => {

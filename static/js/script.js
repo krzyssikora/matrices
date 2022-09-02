@@ -162,7 +162,11 @@ var algebra_content;
             if (data['message_type'] == 1) {
                 window.location.href = '/help';
             } else if (data['message_type'] == 2) {
-                console.log('command help')
+                var help_table = data['help_table'];
+                user_input_field.value = '';
+                $.getScript('/static/js/script_help.js', function(){
+                	showHelpCommandInfo(help_table);
+                });
             } else if (data['message_type'] == 3) {
                 matrices_names = data['matrices_names'];
                 in_text = data['input_latexed'];

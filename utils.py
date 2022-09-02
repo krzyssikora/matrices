@@ -296,8 +296,11 @@ def get_matrix_help_command_menu_by_idx(idx):
 
 
 def get_matrix_help_command_menu_by_command(command):
-    idx = [elt[0] for elt in config.help_commands].index(command.upper())
-    return get_matrix_help_command_menu_by_idx(idx)
+    commands = [elt[0] for elt in config.help_commands]
+    if command.upper() in commands:
+        idx = commands.index(command.upper())
+        return get_matrix_help_command_menu_by_idx(idx)
+    return None
 
 
 def get_matrix_help_general_menu():

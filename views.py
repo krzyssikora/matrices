@@ -64,7 +64,6 @@ def get_matrix_data_to_create(matrix):
 @app.route('/get_user_input')
 def get_and_process_user_input():
     """
-
     Returns:
         message_type:
         1 - general help
@@ -73,8 +72,7 @@ def get_and_process_user_input():
     """
     matrices_dict = database.import_from_database()
     user_input = str(request.args.get('user_input', '')).upper().strip()
-    if user_input == 'HELP':
-        return jsonify({'message_type': 1})
+
     replacements = {
         'PLUSSIGN': '+',
         'SLASHSIGN': '/',
@@ -82,6 +80,28 @@ def get_and_process_user_input():
     }
     for replacement in replacements:
         user_input = user_input.replace(replacement, replacements[replacement])
+
+    if user_input == 'HELP':
+        return jsonify({'message_type': 1})
+
+    if user_input.startswith('HELP'):
+        command = user_input.split()[1]
+        help_table = utils.get_matrix_help_command_menu_by_command(command)
+        if help_table:
+            return jsonify({
+                'message_type': 2,
+                'help_table': help_table,
+            })
+        else:
+            matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
+            return jsonify({
+                'message_type': 3,
+                'matrices_list': matrices_list,
+                'input_processed': 'no such command',
+                'input_latexed': user_input,
+                'refresh_storage': 0,
+            })
+
     input_processed_without_mathjax_wrap, refresh_storage = utils.get_input_read(user_input, matrices_dict)
     input_processed = utils.mathjax_wrap(input_processed_without_mathjax_wrap)
     input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
