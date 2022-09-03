@@ -277,11 +277,11 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                 if terms > 1:
                     multiple_inp = multiple_input(m_name, terms, input_iteration)
                     if multiple_inp is None:
-                        return None, '\\text{Improper input of "del".}'
+                        return '\\text{Improper input of "del".}'
                     if isinstance(multiple_inp, list):
                         for mat in multiple_inp:
                             if not isinstance(mat, Matrix):
-                                return None, '\\text{Improper input of "del".}'
+                                return '\\text{Improper input of "del".}'
                         for mat in multiple_inp:
                             mats = list(matrices_dict.values())
                             names = list(matrices_dict.keys())
