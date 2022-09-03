@@ -1,7 +1,7 @@
 var matrices_names;
-var algebra_chunks_list = [];
 // const maxMatrixDimension = 9;
 var algebra_content;
+var previousInput = '';
 
 (function() {
     "use strict";
@@ -185,13 +185,28 @@ var algebra_content;
         });
     };
 
-    document.getElementById('user-input').addEventListener('keypress', (e) => {
+    user_input_field.addEventListener('keypress', (e) => {
         var key = e.charCode || e.keyCode || 0;
         if (key == 13) {
+            // ENTER pressed
             e.preventDefault();
+            previousInput = user_input_field.value;
             getDataFromUserInput();
-        }
-    })
+        };
+    });
+
+    user_input_field.addEventListener('keydown', (e) => {
+        var key = e.charCode || e.keyCode || 0;
+        if (key == 38) {
+            // ARROW UP PRESSED
+            e.preventDefault();
+            user_input_field.value = previousInput;
+            const end = user_input_field.value.length;
+            // Move focus to end of user-input field
+            user_input_field.setSelectionRange(end, end);
+            user_input_field.focus();
+        };
+    });
 
     // clicking cross in user input clears the field
     document.getElementById('user-input-clear').addEventListener('click', (e) => {

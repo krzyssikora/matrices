@@ -9,7 +9,7 @@ import matrices.views
 # app.add_url_rule('/help', view_func=views.general_help)
 
 # todo:
-#  3. make arrow up recall last input
+#  3. make arrow up recall previous inputs, not just the last one
 #  4. 'a^-1*145/3' does not work, but 'a^-1*145*(1/3)' does
 #  5. add saving by click
 #  6. 2^3^2 does not give nice LaTeX output
