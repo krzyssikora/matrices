@@ -287,7 +287,7 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                             names = list(matrices_dict.keys())
                             ind = mats.index(mat)
                             database.delete_matrix(names[ind])
-                    return ""
+                    return "\\text{Matrices deleted.}"
                 return f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
         elif input_string.startswith("HELP"):
             # todo: change it to displaying help message

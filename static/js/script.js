@@ -56,8 +56,7 @@ var algebra_content;
                 MathJax.typesetPromise();
                 ScrollToBottom(document.getElementById('storage'));
                 focusOnInput();
-                addListenersDeleteMatrix();
-                addListenersCopyMatrixToInput();
+                addStorageListeners();
             }, 100);
         }, 100);
     };
@@ -411,42 +410,6 @@ var algebra_content;
         };
     };
 
-    document.getElementById('add-matrix').addEventListener('click', (e) => {
-        e.preventDefault();
-        refreshNewMatrixDivs();
-        document.getElementById('enter_matrix').style.display = 'block';
-        matrix_name_div.style.display = 'block';
-        matrix_dimensions_div.style.display = 'none';
-        matrix_input_div.style.display = 'none';
-        matrix_rest_div.style.display = 'none';
-
-        document.getElementById('matrix-name').focus();
-
-        // check name
-        // tab should foucus on rows input
-        matrix_name_field.addEventListener('keydown', (e) => {
-            var key = e.charCode || e.keyCode || 0;
-            if (key == 9 || key == '9') {
-                e.preventDefault();
-                checkName(matrix_name_field);
-            }
-        });
-        // enter should focus on rows input
-        matrix_name_field.addEventListener('keypress', (e) => {
-            var key = e.charCode || e.keyCode || 0;
-            if (key == 13) {
-                e.preventDefault();
-                checkName(matrix_name_field);
-            }
-        });
-        // other actions should focus on rows input
-        matrix_name_field.addEventListener('change', (e) => {
-            e.preventDefault();
-            checkName(matrix_name_field);
-        });
-    });
-
-
     document.getElementById('new-matrix-confirm-button').addEventListener('click', e => {
         e.preventDefault();
         document.getElementById('enter_matrix').style.display = 'none';
@@ -463,13 +426,11 @@ var algebra_content;
         algebra_content = $("#algebra div.section-content").html();
         sendMatrixDataToCreate(matrix);
         updateStorage();
-        
-        addListenersDeleteMatrix();
-        addListenersCopyMatrixToInput();
+
+        addStorageListeners();
     });
     
-    addListenersDeleteMatrix();
-    addListenersCopyMatrixToInput();
+    addStorageListeners();
 
     function addListenersDeleteMatrix () {
         $('[id*="storage-cross"]').click((e) => {
@@ -495,6 +456,49 @@ var algebra_content;
             input.setSelectionRange(end, end);
             input.focus();
         })
+    };
+
+    function addListenerAddMatrix() {
+        document.getElementById('add-matrix').addEventListener('click', (e) => {
+            e.preventDefault();
+            refreshNewMatrixDivs();
+            document.getElementById('enter_matrix').style.display = 'block';
+            matrix_name_div.style.display = 'block';
+            matrix_dimensions_div.style.display = 'none';
+            matrix_input_div.style.display = 'none';
+            matrix_rest_div.style.display = 'none';
+    
+            document.getElementById('matrix-name').focus();
+    
+            // check name
+            // tab should foucus on rows input
+            matrix_name_field.addEventListener('keydown', (e) => {
+                var key = e.charCode || e.keyCode || 0;
+                if (key == 9 || key == '9') {
+                    e.preventDefault();
+                    checkName(matrix_name_field);
+                }
+            });
+            // enter should focus on rows input
+            matrix_name_field.addEventListener('keypress', (e) => {
+                var key = e.charCode || e.keyCode || 0;
+                if (key == 13) {
+                    e.preventDefault();
+                    checkName(matrix_name_field);
+                }
+            });
+            // other actions should focus on rows input
+            matrix_name_field.addEventListener('change', (e) => {
+                e.preventDefault();
+                checkName(matrix_name_field);
+            });
+        });
+    };
+
+    function addStorageListeners() {
+        addListenersCopyMatrixToInput();
+        addListenerAddMatrix();
+        addListenersDeleteMatrix();
     };
 
 })();

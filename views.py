@@ -124,6 +124,7 @@ def get_help_command():
         'help_table': help_table,
     })
 
+
 @app.route('/help')
 def general_help():
     help_info, table_header, table_content = utils.get_matrix_help_general_menu()

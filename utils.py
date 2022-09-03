@@ -229,7 +229,7 @@ def get_input_read(inp, matrices_dict):
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
     elif isinstance(result, str):
         return_string = result
-        if 'Matrix deleted.' in return_string:
+        if 'Matrix deleted.' in return_string or 'Matrices deleted.' in return_string:
             refresh_storage = 1
     else:
         if isinstance(result, algebra.Matrix):
