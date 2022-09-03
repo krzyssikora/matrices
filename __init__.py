@@ -10,9 +10,8 @@ import matrices.views
 
 # todo:
 #  1. del(M) refreshes storage, but del(M, N) does not (because of multiple_input???)
-#  2. remove nonlocal variables
-#  3. passing data from python to JS without hidden elements ?
+#  2. after adding a matrix 'add' button is inactive
+#  3. make arrow up recall last input
 #  4. 'a^-1*145/3' does not work, but 'a^-1*145*(1/3)' does
 #  5. add saving by click
 #  6. 2^3^2 does not give nice LaTeX output
-#  7. make arrow up recall last input

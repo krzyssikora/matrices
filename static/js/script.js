@@ -168,7 +168,6 @@ var algebra_content;
                 	showHelpCommandInfo(help_table);
                 });
             } else if (data['message_type'] == 3) {
-                matrices_names = data['matrices_names'];
                 in_text = data['input_latexed'];
                 out_text = data['input_processed'];
                 refresh_storage = data['refresh_storage'];
@@ -219,10 +218,10 @@ var algebra_content;
     var name_not_used_message = '';
 
     function correctMatrixName(matrix_name) {
-        const hidden_matrices_names = document.getElementById('storage-names');
-        hidden_matrices_names.style.display = 'block';
-        matrices_names = getHiddenData('storage-names', 'object');
-        hidden_matrices_names.style.display = 'none';
+        matrices_names = [];
+        for (let elt of document.querySelectorAll('[data-name]')) {
+            matrices_names.push(elt.dataset.name)
+        };
         if (matrices_names.includes(matrix_name)) {
             name_not_used_message = [false, `Matrix named "${matrix_name}" already exists.`]
         } else {
