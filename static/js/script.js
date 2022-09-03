@@ -1,7 +1,8 @@
 var matrices_names;
 // const maxMatrixDimension = 9;
 var algebra_content;
-var previousInput = '';
+var previousInputs = [];
+var previousInputIndex = -1;
 
 (function() {
     "use strict";
@@ -27,27 +28,27 @@ var previousInput = '';
         return $("<span />", { html: elt }).text();
     };
 
-    function getHiddenData(data_id, data_type) {
-        // data_id (str): element's id
-        // data_type (str): either 'int' or 'object' or 'html'
-        var dom_elt = document.getElementById(data_id);
-        var elt_string = dom_elt.innerHTML;
-        var ret_object;
-        if (elt_string.length == 0) {
-            ret_object = ''
-        } else if (data_type == 'int') {
-            ret_object = parseInt(elt_string)
-        } else if (data_type == 'object') {
-            elt_string = convert(elt_string);
-            ret_object = JSON5.parse(elt_string);
-        } else if (data_type == 'html') {
-            ret_object = convert(elt_string)
-        } else {
-            ret_object = elt_string;
-        };
-        dom_elt.style.display = 'none';
-        return ret_object;
-    };
+    // function getHiddenData(data_id, data_type) {
+    //     // data_id (str): element's id
+    //     // data_type (str): either 'int' or 'object' or 'html'
+    //     var dom_elt = document.getElementById(data_id);
+    //     var elt_string = dom_elt.innerHTML;
+    //     var ret_object;
+    //     if (elt_string.length == 0) {
+    //         ret_object = ''
+    //     } else if (data_type == 'int') {
+    //         ret_object = parseInt(elt_string)
+    //     } else if (data_type == 'object') {
+    //         elt_string = convert(elt_string);
+    //         ret_object = JSON5.parse(elt_string);
+    //     } else if (data_type == 'html') {
+    //         ret_object = convert(elt_string)
+    //     } else {
+    //         ret_object = elt_string;
+    //     };
+    //     dom_elt.style.display = 'none';
+    //     return ret_object;
+    // };
 
     function updateStorage() {
         setTimeout(() => {
@@ -100,11 +101,11 @@ var previousInput = '';
     }
     checkLoaded();
 
-    function sendUserInput(user_input) {
-		var request = new XMLHttpRequest();
-		request.open('POST', `/get_user_input/${user_input}`);
-		request.send();
-	};
+    // function sendUserInput(user_input) {
+	// 	var request = new XMLHttpRequest();
+	// 	request.open('POST', `/get_user_input/${user_input}`);
+	// 	request.send();
+	// };
 
     function ScrollToBottom(element) {
         element.scrollTop = element.scrollHeight - element.offsetHeight;
@@ -190,7 +191,8 @@ var previousInput = '';
         if (key == 13) {
             // ENTER pressed
             e.preventDefault();
-            previousInput = user_input_field.value;
+            previousInputs.push(user_input_field.value);
+            previousInputIndex = previousInputs.length - 1;
             getDataFromUserInput();
         };
     });
@@ -198,9 +200,25 @@ var previousInput = '';
     user_input_field.addEventListener('keydown', (e) => {
         var key = e.charCode || e.keyCode || 0;
         if (key == 38) {
-            // ARROW UP PRESSED
+            // ARROW UP pressed
             e.preventDefault();
-            user_input_field.value = previousInput;
+            user_input_field.value = previousInputs[previousInputIndex];
+            previousInputIndex --;
+            if (previousInputIndex < 0) {
+                previousInputIndex = previousInputs.length - 1
+            };
+            const end = user_input_field.value.length;
+            // Move focus to end of user-input field
+            user_input_field.setSelectionRange(end, end);
+            user_input_field.focus();
+        } else if (key == 40) {
+            // ARROW DOWN pressed
+            e.preventDefault();
+            user_input_field.value = previousInputs[previousInputIndex];
+            previousInputIndex ++;
+            if (previousInputIndex >= previousInputs.length) {
+                previousInputIndex = 0
+            };
             const end = user_input_field.value.length;
             // Move focus to end of user-input field
             user_input_field.setSelectionRange(end, end);
