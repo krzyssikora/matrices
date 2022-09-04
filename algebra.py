@@ -290,26 +290,8 @@ def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=
                     return "\\text{Matrices deleted.}"
                 return f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
         elif input_string.startswith("HELP"):
-            # todo: change it to displaying help message
-            # displays help commands
-            if len(input_string) == 4:
-                # from flask import render_template, Markup
-                # # return views.general_help()
-                # help_info, table_header, table_content = utils.get_matrix_help_general_menu()
-                # help_content = {
-                #     'help_info': help_info,
-                #     'table_header': Markup(table_header),
-                #     'table_content': [Markup(row) for row in table_content],
-                # }
-                # return render_template('help.html', help_content=help_content)
-                pass
-            else:
-                help_command = input_string[4:]
-                print("HELP COMMAND:", help_command)
-                if utils.matrix_help_command(help_command) is None:
-                    utils.get_matrix_help_general_menu()
-                    return None, "Only help commands listed above can be used."
-            return ""
+            # displaying help should be dealt with in views.py
+            _logger.error('Displaying HELP should be dealt with in views.py, not in algebra.py')
         return None
 
     def restricted_chars_used(input_string, iteration=0):

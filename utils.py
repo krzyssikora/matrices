@@ -1,4 +1,4 @@
-from matrices import database, algebra, config
+from matrices import database, algebra, config, utils
 from matrices.config import _logger
 
 
@@ -213,19 +213,156 @@ def change_to_latex(input_string):
     return input_string
 
 
-def get_input_read(inp, matrices_dict):
-    """Reads user's input and returns an adequate answer."""
+def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_char=")"):
+    """Creates a list of pairs of positions of opening and closing brackets.
+
+    Args:
+        input_string (str): A string to be parsed.
+        opening_char (str): A character used for opening bracket.
+        closing_char (str): A character used for closing bracket.
+
+    Returns:
+        three lists:
+        1. a list of tuples: (opening_index, closing_index) of pairs of indexes of opening and closed brackets
+        2. a list of opening indexes
+        3. a list of closing indexes
+    """
+    return_pairs_of_brackets = list()
+    openings = [i for i in range(len(input_string)) if input_string[i] == opening_char]
+    closings = [i for i in range(len(input_string)) if input_string[i] == closing_char]
+    if len(openings) != len(closings):
+        return None
+    ind = 0
+    # pairs the brackets, i.e. finds an opening bracket such that the next bracket is a closing one,
+    # appends the pair to the final list and removes both brackets from openings / closings
+    while True:
+        if len(openings) == 0:
+            break
+        opening = openings[ind]
+        closing = input_string.find(closing_char, opening)
+        while closing not in closings:
+            closing = input_string.find(closing_char, closing + 1)
+        if closing < opening:
+            return None
+        if ind + 1 == len(openings) or openings[ind + 1] > closing:
+            # either last opening or next is further than closing
+            if closing - opening == 1:  # do not allow empty brackets
+                return None
+            return_pairs_of_brackets.append((opening, closing))
+            openings.remove(opening)
+            closings.remove(closing)
+            ind = max(0, ind - 1)
+        else:
+            ind += 1
+        print(ind)
+    if len(closings) > 0:
+        return None
+    return_pairs_of_brackets.sort()
+
+    return return_pairs_of_brackets, [b[0] for b in return_pairs_of_brackets], [b[1] for b in return_pairs_of_brackets]
+
+
+def other_brackets_collides_with_brackets(brackets, other_brackets):
+    # check whether any of other_brackets does not collide with brackets
+    for opening, closing in brackets:
+        for other_opening, other_closing in other_brackets:
+            if opening < other_opening < closing < other_closing or other_opening < opening < other_closing < closing:
+                return True
+    return False
+
+
+def get_brackets_simplified(input_string):
+    """
+    Checks whether brackets of different types are correctly placed and if so, changes all of them to round brackets.
+    Args:
+        input_string
+    Returns:
+        input_string with brackets replaced or None if they are incorrectly places
+    """
+    brackets_round = get_pairs_of_brackets_from_string(input_string)
+    if brackets_round is None:
+        return None
+    brackets_square = get_pairs_of_brackets_from_string(input_string, '[', ']')
+    if brackets_square is None:
+        return None
+    brackets_curly = get_pairs_of_brackets_from_string(input_string, '{', '}')
+    if brackets_curly is None:
+        return None
+
+    all_brackets = {brackets_round, brackets_square, brackets_curly}
+    for brackets in all_brackets:
+        all_other_brackets = all_brackets.difference({brackets})
+        for other_brackets in all_other_brackets:
+            if other_brackets_collides_with_brackets(brackets[0], other_brackets[0]):
+                return None
+
+    for old, new in {('{', '('), ('}', ')'), ('[', '('), (']', ')')}:
+        input_string = input_string.replace(old, new)
+
+    return input_string
+
+
+def get_mutually_exclusive_brackets(brackets):
+    mutually_exclusive_brackets = list()
+    idx = 0
+    pivot = -1
+    while True:
+        if brackets[idx][0] > pivot:
+            mutually_exclusive_brackets.append(brackets[idx])
+            pivot = brackets[idx][1]
+        idx += 1
+        if idx >= len(brackets):
+            break
+    mutually_exclusive_brackets.sort(reverse=True)
+    return mutually_exclusive_brackets
+
+
+def read_input_within_brackets(input_string, brackets_all, matrices_dict, tmp_matrices, tmp_fractions, input_iteration):
+    mutually_exclusive_brackets = get_mutually_exclusive_brackets(brackets_all)
+    for opening_index, closing_index in mutually_exclusive_brackets:
+        is_outcome_valid, output_string, input_latexed, output_value, assign_answer = \
+            read_input(input_string, matrices_dict, tmp_matrices, tmp_fractions, input_iteration + 1)
+        
+
+
+def read_input(input_string, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=0):
+    assign_answer = [False, False, '']
+
+    if input_iteration == 0:
+        input_string = get_brackets_simplified(input_string)
+        if input_string is None:
+            return False, 'unbalanced brackets', None, None, assign_answer
+
+    brackets_all, brackets_opening, brackets_closing = get_pairs_of_brackets_from_string(input_string)
+
+
+    return is_outcome_valid, output_string, input_latexed, output_value, assign_answer
+
+
+def get_input_read(user_input, matrices_dict):
+    """
+
+    Args:
+        user_input:
+        matrices_dict:
+
+    Returns:
+        output_string (str) -   an asnwer to user 'query' LaTeXed and mathjax wrapped if query correct,
+                                or simple info string otherwise
+        input_latexed (str) - if user_input can be processed, then this shows it in LaTeXed and mathjax wrapped form
+        refresh_storage (bool) - indicates whether the storage section of the maon page is to be refreshed
+    """
     tmp_matrices = dict()
     tmp_fractions = dict()
-    result_status, result, assign_answer = algebra.read_input(inp,
-                                                              matrices_dict,
-                                                              tmp_matrices,
-                                                              tmp_fractions,
-                                                              0)
+    is_outcome_valid, output_string, input_latexed, output_value, assign_answer = utils.read_input(user_input,
+                                                                                                   matrices_dict,
+                                                                                                   tmp_matrices,
+                                                                                                   tmp_fractions,
+                                                                                                   0)
 
     return_string = ''
     refresh_storage = 0
-    if not result_status:
+    if not is_outcome_valid:
         return_string = '\\text{I cannot perform the operation requested. Try again.}'
     elif isinstance(result, str):
         return_string = result
