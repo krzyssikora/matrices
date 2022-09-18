@@ -1167,13 +1167,12 @@ def get_input_read(user_input, matrices_dict):
     transformer = StringTransformer(input_string=user_input.strip(),
                                     matrices_dict=matrices_dict,
                                     )
-    _logger.debug('BEFORE read_input')
-    _logger.debug(str(transformer))
+    transformer.debug(inspect.stack(), 'BEFORE read_input')
     if transformer.processed:
         return transformer.output_message, transformer.input_latex, transformer.refresh_storage
 
     if not transformer.correct_so_far:
-        return transformer.output_message, \
+        return mathjax_text_wrap(transformer.output_message), \
                transformer.latex_dict.get(0, transformer.input_string), \
                transformer.refresh_storage
     transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
@@ -1274,7 +1273,7 @@ def debug_intro(inspect_stack):
     line_number = stack[2]
     # line_content = stack[4][0].strip()
     method_name = stack[3]
-    print(f'>> {file_name}, {method_name}, line: {line_number - 1}')
+    print(f'>> {file_name}, {method_name}, line: {line_number}')
 
 
 if __name__ == '__main__':
