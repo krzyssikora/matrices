@@ -1,5 +1,5 @@
 import math
-from matrices import database, utils, views
+from matrices import database
 from matrices.config import _logger
 
 
@@ -45,7 +45,7 @@ def get_fraction_from_string(fraction_as_string):
         den = int(den / div)
         return numerator, den
     except Exception as e:
-        _logger.error(e)
+        _logger.error(f'fraction error: {e}')
         return None, None
 
 
@@ -101,34 +101,32 @@ def get_sum_of_fractions(numerator_1, denominator_1, numerator_2, denominator_2)
     return get_fraction_cancelled_down(numerator_1 * factor_1 + numerator_2 * factor_2, common_denominator)
 
 
-def find_starting_index_of_matrix_name_in_string(input_string, matrices_dict, tmp_matrices, position_after=None):
-    """Finds a starting index of a matrix name.
-    Checks for names in both matrices_dict and in tmp_matrices
+def get_product_of_fractions(numerator_1, denominator_1, numerator_2, denominator_2):
+    """Returns a product of two fraction as a simplified fraction.
 
-    Args:
-        tmp_matrices:
-        matrices_dict:
-        input_string (str): A string to be searched.
-        position_after (int): An index just after the possible matrix name.
+        Args:
+            numerator_1 (int): top of the first fraction
+            denominator_1 (int): bottom of the first fraction
+            numerator_2 (int): top of the second fraction
+            denominator_2 (int): bottom of the second fraction
 
-    Returns:
-        The function returns the index of the starting character or -1 if a name is not found.
+        Returns:
+            A tuple (top, bottom) representing the simplified product of two fractions.
     """
-    return_value = - 1
-    if position_after is None:
-        position_after = len(input_string)
-    possible_index = position_after - 1
-    while True:
-        if possible_index < 0:
-            break
-        if input_string[possible_index: position_after] in matrices_dict:
-            return_value = possible_index
-            break
-        if input_string[possible_index: position_after] in tmp_matrices:
-            return_value = possible_index
-            break
-        possible_index -= 1
-    return return_value
+    return get_fraction_cancelled_down(numerator_1 * numerator_2, denominator_1 * denominator_2)
+
+
+def get_fraction_raised_to_power(numerator, denominator, exponent):
+    if int(exponent) != exponent:
+        return None
+    if exponent == 0:
+        return 1, 0
+    numerator, denominator = get_fraction_cancelled_down(numerator, denominator)
+    if exponent < 0:
+        exponent *= -1
+        numerator, denominator = denominator, numerator
+
+    return numerator ** exponent, denominator ** exponent
 
 
 def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_char=")"):
@@ -177,798 +175,6 @@ def get_pairs_of_brackets_from_string(input_string, opening_char="(", closing_ch
     return ret
 
 
-def correct_matrix_name(matrix_name_as_string, matrices_dict):
-    # todo: redundant? Seems so, as implemented in JS, but also below in read_input.invalid_assignment_variable,
-    #  but this can be easily refactored. Two ideas for this:
-    #  1. add save button to results, below will not be needed (save numbers, too?)
-    #  2. check if name in dicts, separately check if correct
-    """Checks if matrix_name_as_string is a correct matrix name.
-
-    Returns:
-        True, "" - when correct, otherwise:
-        False, a message to be displayed
-    """
-    if len(matrix_name_as_string) > 5:  # too long
-        return False, "Maximum length of a name is 5 characters."
-    if matrix_name_as_string in matrices_dict:  # already taken
-        return False, "The name is already in use."
-    letter_used = False
-    digit_used = False
-    # only letters and digits allowed, digits must follow letters
-    for letter in matrix_name_as_string:
-        if not letter_used and (ord("0") <= ord(letter) <= ord("9")):
-            return False, "Letters must go before digits."
-        if (ord("A") <= ord(letter) <= ord("Z")) and digit_used:
-            return False, "Digits must not be placed before letters."
-        if ord("A") <= ord(letter) <= ord("Z"):
-            letter_used = True
-        elif ord("0") <= ord(letter) <= ord("9"):
-            digit_used = True
-        else:
-            return False, "Only letters and digits are allowed."
-    for word in {"DET", "CLS", "HELP", "CREATE"}:
-        if word in matrix_name_as_string:
-            return False, "A name cannot contain \"" + word + "\", it is a reserved word."
-    if matrix_name_as_string == "T":
-        return False, "A name cannot be \"T\", it is a reserved word."
-    return True, ""
-
-
-def find_last_index_of_a_digit_in_string_from_position(input_string, starting_position, left=True):
-    # it is not assumed that input_string[starting_position].isdigit()
-    step = -1 if left else 1
-    position = starting_position
-    top_limit = len(input_string) - 1
-
-    while True:
-        if position < 0 or position > top_limit:
-            break
-        if not input_string[position].isdigit():
-            break
-        position += step
-
-    ret_value = position - step
-    if (left and ret_value > starting_position) or (not left and ret_value < starting_position):
-        return None
-    return ret_value
-
-
-def read_input(inp, matrices_dict, tmp_matrices, tmp_fractions, input_iteration=0):
-    # todo REFACTOR
-    """Changes the input (inp) into an answer - a matrix, a fraction (tuple) or None with an additional error message.
-
-    Args:
-        tmp_fractions:
-        tmp_matrices:
-        matrices_dict:
-        inp (str): User's input to be analyzed.
-        input_iteration (int): Shows the depth of recursion.
-            (restricted characters are checked only for iteration = 0)
-    """
-    # a few auxiliary functions
-
-    def basics(input_string, matrices_dict):
-        """Deals with commands that do not result in a matrix or a number.
-
-        Args:
-            matrices_dict:
-            input_string (str): User's input to be analyzed.
-
-        Returns:
-            Either a string that will be proceed within read_input
-            or a tuple (None, error_message (str))
-        """
-        if input_string == "CLS":
-            return "c"
-        elif input_string.startswith("DEL"):
-            # deleting a matrix
-            if input_string.startswith("DEL(") and input_string.endswith(")"):
-                m_name = input_string[4:-1]
-            elif input_string.startswith("DEL"):
-                m_name = input_string[3:]
-            else:
-                m_name = ""
-            if m_name in matrices_dict:
-                database.delete_matrix(m_name)
-                return "\\text{Matrix deleted.}"
-            else:
-                # or a few matrices
-                terms = m_name.count(",") + 1
-                if terms > 1:
-                    multiple_inp = multiple_input(m_name, terms, input_iteration)
-                    if multiple_inp is None:
-                        return '\\text{Improper input of "del".}'
-                    if isinstance(multiple_inp, list):
-                        for mat in multiple_inp:
-                            if not isinstance(mat, Matrix):
-                                return '\\text{Improper input of "del".}'
-                        for mat in multiple_inp:
-                            mats = list(matrices_dict.values())
-                            names = list(matrices_dict.keys())
-                            ind = mats.index(mat)
-                            database.delete_matrix(names[ind])
-                    return "\\text{Matrices deleted.}"
-                return f'\\text{{There is no matrix named }}' + m_name + '\\text{{ in the database.}}'
-        elif input_string.startswith("HELP"):
-            # todo: change it to displaying help message
-            # displays help commands
-            if len(input_string) == 4:
-                # from flask import render_template, Markup
-                # # return views.general_help()
-                # help_info, table_header, table_content = utils.get_matrix_help_general_menu()
-                # help_content = {
-                #     'help_info': help_info,
-                #     'table_header': Markup(table_header),
-                #     'table_content': [Markup(row) for row in table_content],
-                # }
-                # return render_template('help.html', help_content=help_content)
-                pass
-            else:
-                help_command = input_string[4:]
-                print("HELP COMMAND:", help_command)
-                if utils.matrix_help_command(help_command) is None:
-                    utils.get_matrix_help_general_menu()
-                    return None, "Only help commands listed above can be used."
-            return ""
-        return None
-
-    def restricted_chars_used(input_string, iteration=0):
-        """Check if restricted characters are used in input_string.
-
-        Args:
-            input_string (str): A string to be searched through.
-            iteration (int): the search is to be performed only in the initial part of the process (for iteration = 0),
-            and not in the recursive repetitions (for iteration > 0).
-        """
-        if iteration == 0:
-            for letter in input_string:
-                if letter in {"=", "+", "-", "/", "*", "(", ")", "^", ".", ","} \
-                        or (ord("A") <= ord(letter) <= ord("Z")) or (ord("0") <= ord(letter) <= ord("9")):
-                    continue
-                else:
-                    print("Your input contains restricted character \"" + letter + "\".")
-                    return True
-        return False
-
-    def invalid_assignment_variable(input_string, matrices_dict):
-        """
-        Checks if the part before "=" of the user's input is a valid matrix name.
-        It checks also, if the potential new name is already in use.
-
-        Args:
-            input_string (str): the string to be parsed
-            matrices_dict (dict): keys are matrices' names, values are objects of the class Matrix
-
-        Returns:
-            A tuple (is_invalid, assign_answer), where:
-            - is_invalid (bool):
-                True when the potential name is incorrect
-                False, when it is correct, even if already in use
-            - assign_answer (list):
-                0: assign (bool) - if True, answer should be stored, if False, the other two coordinates are irrelevant,
-                1: overwrite (bool) - if True, answer overwrites an existing matrix,
-                2: name of the new matrix
-        """
-
-        assign_answer = [False, False, '']
-        if "=" in input_string:
-            equal_sign_position = input_string.find("=")
-            inp_new_variable = input_string[:equal_sign_position]
-            correct, stderr = correct_matrix_name(inp_new_variable, matrices_dict)
-            # todo: refactor the output of correct_matrix_name - the condition below makes no sense
-            if "in use" in stderr:  # correct_matrix_name returns False, as the name is in use
-                correct = True
-            if correct:
-                if inp_new_variable in matrices_dict:
-                    assign_answer[1] = True  # answer is to overwrite an existing matrix
-                assign_answer[2] = inp_new_variable
-            else:
-                return True, assign_answer
-            assign_answer[0] = True  # answer must be stored
-        return False, assign_answer
-
-    def rearrange_spaces_and_brackets(input_string):
-        """Removes spaces obtained from replacing parts of input with simplified expressions.
-
-        Then it does bracketing again (i.e. parses pairs of opening and closing brackets and creates respective lists)
-
-        Args:
-            input_string (str): A string to be searched through and simplified.
-
-        Returns the simplified input_string and three lists with brackets' indexes.
-        """
-        input_string = input_string.replace(" ", "")
-        brackets = get_pairs_of_brackets_from_string(input_string)
-        if brackets is None:
-            return None
-        brackets_open = [x[0] for x in brackets]
-        brackets_close = [x[1] for x in brackets]
-        return input_string, brackets, brackets_open, brackets_close
-
-    def remove_redundant_brackets(input_string, brackets):
-        """Removes unnecessary brackets and does bracketing again.
-
-        Then it does bracketing again (i.e. parses pairs of opening and closing brackets and creates respective lists)
-
-        Args:
-            input_string (str): A string to be searched through and simplified.
-            brackets (list): list of tuples (opening, closing) of indexes of brackets in input_string
-
-        Returns the simplified input_string and three lists with brackets' indexes.
-        """
-        new_brackets = list()
-        for elt in brackets:
-            if [elt[0] - 1, elt[1] + 1] in brackets:
-                continue
-            else:
-                new_brackets.append([elt[0], elt[1]])
-        if [0, len(input_string) - 1] in new_brackets:
-            new_brackets.remove([0, len(input_string) - 1])
-        for elt in brackets:
-            if elt in new_brackets:
-                continue
-            else:
-                input_string = input_string[:elt[0]] + " " \
-                               + input_string[elt[0] + 1: elt[1]] + " " + input_string[elt[1] + 1:]
-        # removes unnecessary brackets around T
-        while "(T)" in input_string:
-            input_string = input_string.replace("(T)", "T")
-        return rearrange_spaces_and_brackets(input_string)
-
-    def multiple_input(input_string, number_of_parameters, iteration):
-        """Returns a list of terms separated by commas.
-
-        A term makes sense if it is a matrix or a tuple or a string.
-
-        Args:
-            input_string (str): A string to be searched through and simplified.
-            number_of_parameters (int): The required number of terms to be found.
-        Returns:
-             None: if there is no way to split the input into terms making sense.
-             A list of terms otherwise.
-        """
-        if number_of_parameters == 1:
-            return_status, return_value, assign_ans = read_input(input_string,
-                                                                 matrices_dict,
-                                                                 tmp_matrices,
-                                                                 tmp_fractions,
-                                                                 iteration + 1)
-            if not return_status:
-                return None
-            else:
-                return [return_value]
-        num_commas = input_string.count(",")
-        if num_commas + 1 < number_of_parameters:
-            return None
-        pos = -1
-        while True:
-            pos = input_string.find(",", pos + 1)
-            if pos == -1:
-                return None
-            # head is the part before the chosen comma
-            head_status, head, assign_ans = read_input(input_string[:pos],
-                                                       matrices_dict,
-                                                       tmp_matrices,
-                                                       tmp_fractions,
-                                                       iteration + 1)
-            # tail is the rest, split recursively
-            tail = multiple_input(input_string[pos + 1:], number_of_parameters - 1, iteration)
-            if not head_status or tail is None:
-                continue
-            elif isinstance(tail, tuple) and tail[0] is None:
-                continue
-            elif tail is not None:
-                return_value = [head]
-                return_value.extend(tail)
-                return return_value
-            break
-        return None
-
-    # TODO: documentation here
-    # TODO: make it shorter
-    def prefix_functions(input_string, pref, assign_answer, brackets, brackets_open, brackets_close, input_iteration):
-        # replaces functions in the input (input_string) of the form: func(...)
-        # where pref = "func("
-        # with an appropriate result: tmp matrix's name or a tmp fraction's name
-        # function del() is an exception, as it does not produce a result
-        # that can be used to further calculations,
-        # so it is dealt with in basics
-        if input_string is None:
-            return None
-        m_result = m_name = None
-        while True:
-            pos0 = input_string.find(pref)
-            if pos0 == -1:
-                break
-            pos1 = pos0 + len(pref) - 1
-            if pos1 in brackets_open:
-                # pos0 points to the first letter of pref,
-                # pos1 to the opening bracket
-                # pos2 to the closing bracket
-                pos2 = brackets[brackets_open.index(pos1)][1]
-                brackets.pop(brackets_open.index(pos1))
-                brackets_close.pop(brackets_open.index(pos1))
-                brackets_open.pop(brackets_open.index(pos1))
-                # firstly functions that can have multiple inputs
-                if pref in ["AUG(", "SUB(", "CREATE("]:
-                    which_prefix = ["AUG(", "SUB(", "CREATE("].index(pref)
-                    which_prefix += [2, 2, 0][which_prefix]
-                    multiple_inp = multiple_input(input_string[pos1 + 1: pos2], which_prefix, input_iteration)
-                    if multiple_inp is None and pref == "SUB(":
-                        which_prefix += 2
-                        multiple_inp = multiple_input(input_string[pos1 + 1: pos2], 5, input_iteration)
-                    if multiple_inp is None:
-                        return None
-                    elif pref == "AUG(" and isinstance(multiple_inp, list) and isinstance(multiple_inp[0], Matrix) \
-                            and isinstance(multiple_inp[1], Matrix):
-                        m_result = multiple_inp[0].augment(multiple_inp[1])
-                    elif pref == "SUB(":  # not resistant to mistakes
-                        sub_inp = list()
-                        for i in range(which_prefix - 1):
-                            if isinstance(multiple_inp[1:][i], tuple):
-                                sub_inp.append(multiple_inp[1:][i][0])
-                            else:
-                                return None
-                        if isinstance(multiple_inp[0], Matrix):
-                            m_result = multiple_inp[0].submatrix(*sub_inp)
-                        else:
-                            return None
-                    elif pref == "CREATE(":
-                        if isinstance(multiple_inp[0], tuple) and multiple_inp[0][1] == 1:
-                            rows = multiple_inp[0][0]
-                            try:
-                                rows = int(rows)
-                            except Exception as e:
-                                print(e)
-                                return None
-                        else:
-                            return None
-                        if isinstance(multiple_inp[1], tuple) and multiple_inp[1][1] == 1:
-                            columns = multiple_inp[1][0]
-                            try:
-                                columns = int(columns)
-                            except Exception as e:
-                                print(e)
-                                return None
-                        else:
-                            return None
-                        m_result = Matrix(rows, columns)
-                        # todo: it was: m_result = Matrix(rows, columns, random_assignment=True)
-                        if assign_answer[0]:
-                            assign_answer[0] = False
-                            print("Matrix " + assign_answer[2] + ":")
-                            print(m_result)
-                            matrices_dict.update({assign_answer[2]: m_result})
-                            database.save_matrix(assign_answer[2])
-                            assign_answer[2] = ""
-                            if assign_answer[1]:
-                                assign_answer[1] = False
-                                print("has been changed.")
-                            else:
-                                print("has been created.")
-                            return ""
-                # then functions without an input
-                else:
-                    func_status, func_input, assign_ans = read_input(input_string[pos1 + 1: pos2],
-                                                                     matrices_dict,
-                                                                     tmp_matrices,
-                                                                     tmp_fractions,
-                                                                     input_iteration + 1)
-                    if not func_status:
-                        return None
-                    elif isinstance(func_input, tuple):
-                        return None  # argument of the function is a tuple
-                    elif isinstance(func_input, Matrix):  # argument of the function is a matrix
-                        list_prefixes = ["RREF(", "REF(", "DET("]
-                        list_functions = [func_input.rref(), func_input.ref(), func_input.det()]
-                        m_result = list_functions[list_prefixes.index(pref)]
-                # replaces a part of the input with a tmp matrix or tmp fraction name
-                m_ind = len(tmp_matrices)
-                if m_result is None:
-                    return None
-                elif isinstance(m_result, tuple):  # SAME in read_input_recursively ???????
-                    m_name = "F_" + str(m_ind)
-                    tmp_fractions.update({m_name: m_result})
-                elif isinstance(m_result, Matrix):
-                    m_name = "M_" + str(m_ind)
-                    tmp_matrices.update({m_name: m_result})
-                num_spaces = pos2 - pos0 + 1 - len(m_name)
-                if num_spaces >= 0:
-                    input_string = input_string[:pos0] + m_name + " " * num_spaces + input_string[pos2 + 1:]
-                else:
-                    input_string = input_string[:pos0] + m_name + input_string[pos2 + 1:]
-                    brackets = get_pairs_of_brackets_from_string(input_string)
-                    if brackets is None:
-                        return None
-                    brackets_open = [x[0] for x in brackets]
-                    brackets_close = [x[1] for x in brackets]
-        return input_string
-
-    # TODO: documentation here
-    # TODO: make it shorter
-    def power(input_string, matrices_dict, tmp_matrices, brackets, brackets_open, brackets_close, input_iteration):
-        # deals with "^" in the input
-        if input_string is None:
-            return None
-        # 'base' of the power will be between pos_base0 and pos_base1
-        # 'exponent' will be between pos_power0 and pos_power1
-        m_result = m_name = None
-        how_many = 0
-        while True:
-            how_many += 1
-            pos_base1 = input_string.rfind("^") - 1
-            if pos_base1 == -2:
-                return input_string, brackets, brackets_open, brackets_close
-            pos_power0 = pos_base1 + 2
-            # isolates exponent, which should be either T or (T) or (-1) or a positive integer
-            # todo: M^(-2) should be understood as (M^-1)^2
-            exponent = None
-            pos_power1 = pos_power0
-            if pos_power0 in brackets_open:
-                pos_power1 = brackets[brackets_open.index(pos_power0)][1]
-                if input_string[pos_power0 + 1: pos_power1] == "T":
-                    exponent = "T"
-            else:
-                if input_string[pos_power0] == "T":
-                    exponent = "T"
-                else:
-                    if ord(input_string[pos_power1]) == ord("-"):
-                        pos_power1 += 1
-                    while pos_power1 < len(input_string) and input_string[pos_power1].isdigit():
-                        pos_power1 += 1
-                    pos_power1 -= 1
-                    if pos_power1 < pos_power0:
-                        # it may be also an integer stored in tmp_fractions
-                        if input_string[pos_power0:].startswith('F_'):
-                            fraction_ending_index = \
-                                find_last_index_of_a_digit_in_string_from_position(input_string,
-                                                                                   pos_power0 + 2,
-                                                                                   left=False)
-                            if fraction_ending_index:
-                                exponent = tmp_fractions.get(input_string[pos_power0: fraction_ending_index + 1], None)
-                                exponent = exponent[0] if exponent[1] == 1 else None
-                                if exponent:
-                                    input_string = input_string[:pos_power0] \
-                                                   + str(exponent) \
-                                                   + input_string[fraction_ending_index + 1:]
-                                    pos_power1 = pos_power0 + len(str(exponent)) - 1
-                                    brackets = get_pairs_of_brackets_from_string(input_string)
-                                    brackets_open = [bracket[0] for bracket in brackets]
-                                    brackets_close = [bracket[1] for bracket in brackets]
-                        else:
-                            return None
-            if exponent is None:
-                # power is not T, (T) nor (-1), it must be an integer then
-                power_status, power_val, assign_ans = read_input(input_string[pos_power0: pos_power1 + 1],
-                                                                 matrices_dict,
-                                                                 tmp_matrices,
-                                                                 tmp_fractions,
-                                                                 input_iteration + 1)
-                if isinstance(power_val, tuple) and power_val[1] == 1:
-                    exponent = power_val[0]
-                    try:
-                        exponent = int(exponent)
-                    except Exception as e:
-                        _logger.error('Incorrect power. {}'.format(e))
-                        return None
-            # isolates the base of the power
-            if pos_base1 in brackets_close:
-                # base is an expression in brackets
-                pos_base0 = brackets[brackets_close.index(pos_base1)][0]
-            else:
-                pos_base0 = find_starting_index_of_matrix_name_in_string(input_string,
-                                                                         matrices_dict,
-                                                                         tmp_matrices,
-                                                                         pos_base1 + 1)
-                if pos_base0 == -1:
-                    # base is without brackets, it is not a matrix, so it must be a positive integer
-                    pos_base0 = pos_base1
-                    while pos_base0 >= 0 and input_string[pos_base0].isdigit():
-                        pos_base0 -= 1
-                    pos_base0 += 1
-                    if pos_base0 > pos_base1:
-                        return None
-            base_status, base_val, assign_ans = read_input(input_string[pos_base0: pos_base1 + 1],
-                                                           matrices_dict,
-                                                           tmp_matrices,
-                                                           tmp_fractions,
-                                                           input_iteration + 1)
-            if isinstance(base_val, tuple):
-                if exponent < 0:
-                    base_val = (base_val[1], base_val[0])
-                    exponent = -exponent
-                m_result = (1, 1)
-                for _ in range(exponent):
-                    m_result = get_fraction_cancelled_down(m_result[0] * base_val[0], m_result[1] * base_val[1])
-                m_name = "F_" + str(len(tmp_fractions))
-                tmp_fractions.update({m_name: m_result})
-            elif isinstance(base_val, Matrix):
-                if exponent == "T":
-                    m_result = base_val.transpose()
-                elif exponent == -1:
-                    m_result = base_val.inverse()
-                elif exponent > 0:
-                    m_result = EmptyMatrix(base_val)
-                    m_result.identity()
-                    for _ in range(exponent):
-                        m_result = m_result.multiply_matrix(base_val) if m_result else None
-                if m_result:
-                    m_name = "M_" + str(len(tmp_matrices))
-                    tmp_matrices.update({m_name: m_result})
-                else:
-                    return None
-            else:
-                return None
-
-            num_spaces = pos_power1 - pos_base0 + 1 - len(m_name)
-            if num_spaces >= 0:
-                input_string = input_string[:pos_base0] + m_name + " " * num_spaces + input_string[pos_power1 + 1:]
-            else:
-                input_string = input_string[:pos_base0] + m_name + input_string[pos_power1 + 1:]
-                brackets = get_pairs_of_brackets_from_string(inp)
-                if brackets is None:
-                    return None
-                brackets_open = [x[0] for x in brackets]
-                brackets_close = [x[1] for x in brackets]
-
-        # return input_string, brackets, brackets_open, brackets_close
-
-    def read_input_recursively(input_string, matrices_dict, tmp_matrices, tmp_fractions, brackets, input_iteration):
-        """Splits the input into pieces of mutually exclusive brackets and reads input in each one of them.
-
-        Args:
-            input_string (str): A string to be searched through.
-
-        Returns:
-            simplified string, in which each expression in brackets is replaced with either a matrix name
-            (from matrices_dict, or a temporary one from tmp_matrices) or a temporary fraction name
-            (from tmp_fractions).
-        """
-        brackets_mut_exc = list()
-        ind = 0
-        pivot = -1
-        while True:
-            if brackets[ind][0] > pivot:
-                brackets_mut_exc.append(brackets[ind])
-                pivot = brackets[ind][1]
-            ind += 1
-            if ind >= len(brackets):
-                break
-        brackets_mut_exc.sort(reverse=True)
-        for elt in brackets_mut_exc:
-            m_status, m_result, assign_ans = read_input(input_string[elt[0]: elt[1] + 1],
-                                                        matrices_dict,
-                                                        tmp_matrices,
-                                                        tmp_fractions,
-                                                        input_iteration + 1)
-            m_name = None
-            if not m_status:
-                return None
-            elif isinstance(m_result, tuple):
-                m_name = "F_" + str(len(tmp_fractions))
-                m_result = get_fraction_cancelled_down(m_result[0], m_result[1])
-                tmp_fractions.update({m_name: m_result})
-            elif isinstance(m_result, Matrix):
-                m_name = "M_" + str(len(tmp_matrices))
-                tmp_matrices.update({m_name: m_result})
-            num_spaces = elt[1] - elt[0] + 1 - len(m_name)
-            if num_spaces >= 0:
-                input_string = input_string[:elt[0]] + m_name + " " * num_spaces + input_string[elt[1] + 1:]
-            else:
-                input_string = input_string[:elt[0]] + m_name + input_string[elt[1] + 1:]
-                brackets = get_pairs_of_brackets_from_string(inp)
-                if brackets is None:
-                    return None
-        brackets_open = [x[0] for x in brackets]
-        brackets_close = [x[1] for x in brackets]
-        return input_string, brackets, brackets_open, brackets_close
-
-    # TODO: can this be made shorter ?
-    def splitting_operations(input_string, operations, iteration):
-        """Splits the input using the operations.
-
-        Starts from right to ensure correct order of operations.
-        Should be applied firstly for + and -, and then for * and /.
-
-        Args:
-            input_string (str): A string to analyze.
-            operations (int):
-                If operations = 0, the operations considered are + and -.
-                If operations = 1, the operations considered are * and /.
-        """
-        if len(input_string) > 1:
-            if input_string[0] == "+" and input_string[1] not in ["+", "-", "*", "/"]:
-                input_string = input_string[1:]
-        ops = [["+", "-"], ["*", "/"]]
-        if input_string.count(ops[operations][0]) + input_string.count(ops[operations][1]) == 0:
-            return inp
-        last_operation_position = -1
-        operation = None
-        for op in ops[operations]:
-            pos = input_string.rfind(op)
-            if pos == -1:
-                continue
-            else:
-                if pos > last_operation_position:
-                    # addition: to accept inputs like "2/-3/4"
-                    if operations == 0:
-                        while pos > 0 and input_string[pos - 1] in ["*", "/"]:
-                            pos = input_string.rfind(op, 0, pos)
-                    if op == "-":
-                        while pos > 0 and input_string[pos - 1] == "+":
-                            pos = input_string.rfind(op, 0, pos)
-                    if pos == -1:
-                        continue
-                    last_operation_position = pos
-                    operation = op
-        if last_operation_position >= 0:  # divide into smaller pieces
-            m2_status, m2, assign_ans = read_input(input_string[last_operation_position + 1:],
-                                                   matrices_dict,
-                                                   tmp_matrices,
-                                                   tmp_fractions,
-                                                   iteration + 1)
-            if last_operation_position == 0 and operation == "-":
-                if isinstance(m2, Matrix):
-                    m1 = EmptyMatrix(m2)
-                    m1.zero_matrix()
-                elif isinstance(m2, tuple):
-                    m1 = (0, 1)
-                else:
-                    return None
-                m1_status = True
-            else:
-                m1_status, m1, assign_ans = read_input(input_string[0: last_operation_position],
-                                                       matrices_dict,
-                                                       tmp_matrices,
-                                                       tmp_fractions,
-                                                       iteration + 1)
-            if m1 is None or not m2_status or not m1_status:
-                return None
-            try:
-                if (isinstance(m1, tuple) and m1[0] is None) or (isinstance(m2, tuple) and m2[0] is None):
-                    return None
-            except Exception as e:
-                print(e)
-            if isinstance(m1, Matrix) and isinstance(m2, Matrix):
-                if operation == "+":
-                    return m1.add_matrix(m2)
-                elif operation == "-":
-                    return m1.subtract_matrix(m2)
-                elif operation == "*":
-                    product_of_matrices = m1.multiply_matrix(m2)
-                    if product_of_matrices:
-                        return m1.multiply_matrix(m2)
-                    else:
-                        return '\\text{The matrices cannot be multiplied.}'
-                    # todo: make it similar for other operations
-                else:
-                    return None
-            elif type(m1) == tuple and type(m2) == tuple:
-                m10, m11, m20, m21 = int(m1[0]), int(m1[1]), int(m2[0]), int(m2[1])
-                if operation == "+":
-                    return get_sum_of_fractions(m10, m11, m20, m21)
-                elif operation == "-":
-                    return get_sum_of_fractions(m10, m11, -m20, m21)
-                elif operation == "*":
-                    return get_fraction_cancelled_down(m10 * m20, m11 * m21)
-                elif operation == "/":
-                    return get_fraction_cancelled_down(m10 * m21, m11 * m20)
-                else:
-                    return None
-            elif isinstance(m1, Matrix) and type(m2) == tuple:
-                if operation == "*":
-                    return m1.multiply_scalar(m2[0], m2[1])
-                else:
-                    return None
-            elif type(m1) == tuple and isinstance(m2, Matrix):
-                if operation == "*":
-                    return m2.multiply_scalar(m1[0], int(m1[1]))
-                else:
-                    return None
-            else:
-                return None
-        return input_string
-
-    def simple_object(input_string, matrices_dict):
-        """Checks whether the input is a fraction or a matrix and returns a string with its name.
-
-        The assumption here is that in the input string there are no more brackets, no more operations, so it must be
-        either a matrix or a number.
-
-        Args:
-            matrices_dict:
-            input_string (str): A string to be searched through.
-
-        Returns:
-            Either a matrix name (from matrices_dict or from tmp_matrices) or a fraction name (tmp_fractions) or
-            None if the input does not make sense.
-        """
-        # matrix:
-        if input_string in matrices_dict:
-            return matrices_dict.get(input_string)
-        elif input_string in tmp_matrices:
-            return tmp_matrices.get(input_string)
-        elif input_string in tmp_fractions:
-            return tmp_fractions.get(input_string)
-        else:  # a number, implemented as a tuple (numerator, denominator)
-            try:
-                num, den = get_fraction_from_string(input_string)
-                if num is None:
-                    return None
-                else:
-                    return num, den
-            except Exception as e:
-                print(e)
-                return None
-
-    assign_answer = [False, False, '']
-    nothing_to_return = False, '', [False, False, '']
-    inp = inp.upper().replace(" ", "")
-    basic_output = basics(inp, matrices_dict)  # cls, del, help for now only
-    if basic_output is not None:
-        return True, basic_output, assign_answer
-    if restricted_chars_used(inp, input_iteration):
-        return nothing_to_return
-    invalid_assignment, assign_answer = invalid_assignment_variable(inp, matrices_dict)
-    if invalid_assignment:
-        return False, "New matrix name is incorrect.", assign_answer
-    else:
-        inp = inp[inp.find("=") + 1:]
-
-    # the rest is for the part after "="
-    brackets = get_pairs_of_brackets_from_string(inp)
-    if brackets is None:
-        return False, "Unbalanced brackets.", assign_answer
-    inp, brackets, brackets_open, brackets_close = remove_redundant_brackets(inp, brackets)
-    if inp is None:
-        return False, "Brackets do not match.", assign_answer
-    brackets_open = [x[0] for x in brackets]
-    brackets_close = [x[1] for x in brackets]
-    for prefix in ["AUG(", "SUB(", "RREF(", "REF(", "DET("]:
-        inp = prefix_functions(inp, prefix, assign_answer, brackets, brackets_open, brackets_close, input_iteration)
-        if inp is None:
-            return False, f'\\text{{Improper input of "{{{prefix[:-1].lower()}}}".}}', assign_answer
-        if inp == "":
-            return True, "", assign_answer  # everything is fine, but all already done
-    inp, brackets, brackets_open, brackets_close = rearrange_spaces_and_brackets(inp)
-    _logger.debug('inp before power: {}'.format(inp))
-    inp, brackets, brackets_open, brackets_close = power(inp,
-                                                         matrices_dict,
-                                                         tmp_matrices,
-                                                         brackets,
-                                                         brackets_open,
-                                                         brackets_close,
-                                                         input_iteration)
-    _logger.debug('inp after power: {}'.format(inp))
-    if inp is None:
-        return False, "\\text{A power cannot be evaluated.}", assign_answer
-    inp, brackets, brackets_open, brackets_close = rearrange_spaces_and_brackets(inp)
-    if len(brackets) > 0:
-        inp, brackets, brackets_open, brackets_close = read_input_recursively(inp,
-                                                                              matrices_dict,
-                                                                              tmp_matrices,
-                                                                              tmp_fractions,
-                                                                              brackets,
-                                                                              input_iteration)
-    if inp is None:
-        return nothing_to_return
-    inp = splitting_operations(inp, 0, input_iteration)
-    if not isinstance(inp, str):
-        if inp is None:
-            return nothing_to_return
-        else:
-            return True, inp, assign_answer
-    inp = splitting_operations(inp, 1, input_iteration)
-    if not isinstance(inp, str):
-        return True, inp, assign_answer
-
-    simple_obj = simple_object(inp, matrices_dict)
-    if simple_obj:
-        return True, simple_object(inp, matrices_dict), assign_answer
-    else:
-        return False, '', assign_answer
-
-
 class Matrix:
     def __init__(self, rows=0, columns=0, values=None):
         """Initializes a matrix.
@@ -993,7 +199,7 @@ class Matrix:
             values = []
 
         # creating list of numerators (mat) and denominators
-        arranged = (len(values) == rows)
+        arranged = (len(values) == rows and rows > 1)
         for r in range(rows):
             list_numerator = list()
             list_denominator = list()
@@ -1294,6 +500,27 @@ class Matrix:
                     return_matrix.mat[row][column] = top * return_matrix.denominator // bottom
         return return_matrix
 
+    def raise_matrix_to_a_power(self, exponent):
+        if self.columns != self.rows:
+            return None
+        if int(exponent) != exponent:
+            return None
+
+        return_value = EmptyMatrix(self)
+        return_value.identity()
+        if exponent == 0:
+            return return_value
+        elif exponent < 0:
+            exponent *= -1
+            multiplier = self.inverse()
+        else:
+            multiplier = self
+
+        for _ in range(exponent):
+            return_value = return_value.multiply_matrix(multiplier)
+
+        return return_value
+
     def find_non_zero(self, column=0, start_row=0):
         """Returns the number of the first row with non-zero entry in a given column.
 
@@ -1509,19 +736,9 @@ class EmptyMatrix(Matrix):
 
 
 if __name__ == '__main__':
-    data = [
-        ('asfa413451avjnalsj', 9, True),
-        ('asfa413451avjnalsj', 8, True),
-        ('asfa413451avjnalsj', 10, True),
-        ('asfa413451avjnalsj', 9, False),
-        ('lsj', 9, True),
-        ('lsj', 2, True),
-        ('lsj', 2, False),
-        ('lsj', 0, False),
-    ]
-    for input_string, starting_position, left in data:
-        print('012345678901234567890')
-        print(input_string,
-              starting_position,
-              left,
-              find_last_index_of_a_digit_in_string_from_position(input_string, starting_position, left))
+    matrices = database.import_from_database()
+    mat_a = matrices['A']
+    print(mat_a)
+    mat_i = mat_a.inverse()
+    print(mat_i.multiply_matrix(mat_i).multiply_matrix(mat_i))
+    print(mat_a.raise_matrix_to_a_power(-3))

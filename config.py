@@ -1,13 +1,19 @@
 import logging
 
 # DATABASE = "matrices/database/matrices_rational.sqlite"
-DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
+# DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
+DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
+
+MATRIX_NAME_RESTRICTED_WORDS = {'RREF', 'DEL', 'AUG', 'SUB', 'DET'}
 
 help_general_intro = ['This app offers various operations on matrices with rational inputs. '
                       'It accepts both fractions and decimals.', ' ',
                       'Let M and N be the names of matrices.',
                       'The following are the available actions.',
-                      'To get more details type a help command in the algebra window.']
+                      'To get more details type a help command in the algebra window.',
+                      '',
+                      'Note that a matrix name cannot be longer than 5 characters. '
+                      'It should consist of letters that may be followed by digits.']
 
 help_general_info = [["action", "command/-s", "help command"],
                      ["clear screen", "cls", "help cls"],
@@ -125,8 +131,8 @@ _logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 # create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # add formatter to ch
-ch.setFormatter(formatter)
+# ch.setFormatter(formatter)
 # add ch to logger
 _logger.addHandler(ch)

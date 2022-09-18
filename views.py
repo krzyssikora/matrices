@@ -1,7 +1,7 @@
 from matrices import app
 from matrices import database, utils, algebra, config
-from matrices.config import _logger
-from flask import render_template, request, jsonify, Markup, redirect, url_for
+# from matrices.config import _logger
+from flask import render_template, request, jsonify, Markup  # , redirect, url_for
 import git
 
 
@@ -66,6 +66,7 @@ def get_and_process_user_input():
     """
     Returns:
         message_type:
+        0 - clear screen
         1 - general help
         2 - command help
         3 - other input
@@ -80,6 +81,9 @@ def get_and_process_user_input():
     }
     for replacement in replacements:
         user_input = user_input.replace(replacement, replacements[replacement])
+
+    if user_input == 'CLS':
+        return jsonify({'message_type': 0})
 
     if user_input == 'HELP':
         return jsonify({'message_type': 1})
@@ -102,9 +106,8 @@ def get_and_process_user_input():
                 'refresh_storage': 0,
             })
 
-    input_processed_without_mathjax_wrap, refresh_storage = utils.get_input_read(user_input, matrices_dict)
-    input_processed = utils.mathjax_wrap(input_processed_without_mathjax_wrap)
-    input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
+    input_processed, input_latexed, refresh_storage = utils.get_input_read(user_input, matrices_dict)
+    # input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     return jsonify({
         'message_type': 3,
