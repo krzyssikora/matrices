@@ -1,7 +1,7 @@
 from matrices import app
 from matrices import database, utils, algebra, config
-from matrices.config import _logger
-from flask import render_template, request, jsonify, Markup, redirect, url_for
+# from matrices.config import _logger
+from flask import render_template, request, jsonify, Markup  # , redirect, url_for
 import git
 
 

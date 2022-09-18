@@ -736,9 +736,6 @@ class EmptyMatrix(Matrix):
 
 
 if __name__ == '__main__':
-    # strings = ['-----1/2', '-1/2', '-6/-3', '1.2', '--3.4']
-    # for st in strings:
-    #     print(st, get_fraction_from_string(st))
     matrices = database.import_from_database()
     mat_a = matrices['A']
     print(mat_a)

@@ -2,7 +2,6 @@
 from matrices import database, algebra, config
 from matrices.config import _logger
 import re
-import math
 import inspect
 import os
 
@@ -122,7 +121,6 @@ class StringTransformer:
                     correct_del_input = all([matrix in self.matrices_dict for matrix in names_of_matrices_to_delete])
                     if correct_del_input:
                         for matrix_name in names_of_matrices_to_delete:
-                            matrices = list(self.matrices_dict.values())
                             names = list(self.matrices_dict.keys())
                             ind = names.index(matrix_name)
                             database.delete_matrix(names[ind])
@@ -232,7 +230,12 @@ class StringTransformer:
                     break
                 previous_end = pos_1
                 top, bottom = get_fraction_from_decimal_string(object_string)
-                if pos_0 == 1 and temporary_input_string[0] == '-':
+                bare_minus_condition_met = \
+                    (pos_0 == 1 and temporary_input_string[0] == '-') \
+                    or (pos_0 > 1
+                        and temporary_input_string[pos_0 - 1] == '-'
+                        and temporary_input_string[pos_0 - 2] == '^')
+                if bare_minus_condition_met:
                     temporary_list.append((pos_0 - 1, pos_1,
                                            (-top, bottom),
                                            len(object_string),
@@ -372,28 +375,17 @@ class StringTransformer:
             _logger.debug(f'...reading input from {inspect.stack()[0][3]}')
             self.read_input((starting_position, pos), input_iteration)
             head_correct = self.correct_so_far
-            _logger.debug(f'head_correct: {head_correct} for piece: {self.input_string[starting_position: pos]} or {self.original_user_input[starting_position: pos]} between {starting_position}, {pos}')
             # tail is the rest, split recursively
             self.get_multiple_input_processed((pos + 1, ending_position),
                                               input_iteration + 1,
                                               number_of_parameters - 1)
             tail_correct = self.correct_so_far
-            _logger.debug(f'tail_correct: {tail_correct} for piece: {self.input_string[pos + 1: ending_position]} or {self.original_user_input[pos + 1: ending_position]} between {pos + 1}, {ending_position}')
             if not (head_correct and tail_correct):
-                # self.correct_so_far = True
                 continue
             else:
-                _logger.debug('starting_position: {}'.format(starting_position))
-                _logger.debug('pos + 1: {}'.format(pos + 1))
-                _logger.debug('self.values_dict[starting_position]: {}'.format(self.values_dict[starting_position]))
-                _logger.debug('self.values_dict[pos + 1]: {}'.format(self.values_dict[pos + 1]))
                 tail = self.values_dict[pos + 1]
-                self.values_dict[starting_position] = [self.values_dict[starting_position]] + (tail if isinstance(tail, list) else [tail])
-                # todo do we need the part below, above return? Or is it cleared deeper in read_input?
-                # for k in range(1, len(self.values_dict)):
-                #     self.values_dict[k] = None
-                # for k in range(len(self.values_dict)):
-                #     self.latex_dict[k] = ''
+                self.values_dict[starting_position] = \
+                    [self.values_dict[starting_position]] + (tail if isinstance(tail, list) else [tail])
                 self.correct_so_far = True
                 return
         self.correct_so_far = False
@@ -430,8 +422,6 @@ class StringTransformer:
                         number_of_parameters += 2
                         self.get_multiple_input_processed((pos1 + 1, pos2), input_iteration, number_of_parameters)
                     multiple_input = self.values_dict[pos1 + 1]
-                    _logger.debug(f'multiple_input: {multiple_input}')
-                    _logger.debug('???? correct_so_far: {}, multiple_input: {}'.format(self.correct_so_far, multiple_input))
                     if not self.correct_so_far:
                         self._set_attributes_when_input_incorrect(prefix)
                         return
@@ -754,13 +744,15 @@ class StringTransformer:
     def read_input(self, read_range, input_iteration=0):
         # if input_iteration > 5:
         #     quit()
-        self.debug(inspect.stack(), 'INITIALLY read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'INITIALLY read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
         start, end = read_range
         if end - start == 1:
             if input_iteration == 0:
                 self.output_message = get_string_from_dict(self.values_dict)
                 self.input_latex = get_latex_from_dict(self.latex_dict)
-                self.debug(inspect.stack(), 'returning...read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+                self.debug(inspect.stack(),
+                           'returning...read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
             return
 
         if self.no_more_chars_to_process_in_string(read_range):
@@ -786,32 +778,37 @@ class StringTransformer:
             if not self.correct_so_far:
                 return
 
-        self.debug(inspect.stack(), 'AFTER PREFIX read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'AFTER PREFIX read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         if input_iteration == 0:
             self.read_input_within_brackets(input_iteration)
         if not self.correct_so_far:
             return
 
-        self.debug(inspect.stack(), 'AFTER BRACKETS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'AFTER BRACKETS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         self.clean_powers(read_range)
         if not self.correct_so_far:
             return
 
-        self.debug(inspect.stack(), 'AFTER POWERS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'AFTER POWERS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         self.split_input_by_operations(0, read_range, input_iteration)
         if not self.correct_so_far:
             return
 
-        self.debug(inspect.stack(), 'AFTER SPLIT 0 read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'AFTER SPLIT 0 read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         self.split_input_by_operations(1, read_range, input_iteration)
         if not self.correct_so_far:
             return
 
-        self.debug(inspect.stack(), 'AFTER SPLIT 1 read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        self.debug(inspect.stack(),
+                   'AFTER SPLIT 1 read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         # there should be exactly one key of values_dict in the read_range or at 0
         if self.correct_so_far:
@@ -882,6 +879,7 @@ def get_ids_before_and_after_in_dict(the_dict, idx):
 
 def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
                                                idx_to=None):
+    # todo: redundant?
     """
     binary search of a tuple with known certain coordinate
     Args:
@@ -923,188 +921,6 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
                                                           which_coordinate,
                                                           idx_from,
                                                           idx_mid)
-
-
-def get_inner_pair_id(brackets, idx):
-    """
-    Find the first pair of brackets that are within the brackets pointed by idx
-    Args:
-        brackets: list of tuples (opening bracket, closing bracket)
-        idx: index of the brackets within which the pair of brackets is to be found.
-    Returns:
-        The index of the pair found or None if such a pair does not exist.
-    """
-    start_pos, end_pos = brackets[idx]
-    while True:
-        idx += 1
-        if idx >= len(brackets):
-            return None
-        if brackets[idx][1] < end_pos:
-            return idx
-
-
-def get_front_minuses_and_pluses(the_string):
-    """
-    Args:
-        the_string (str):
-    Returns:
-        The string of pluses / minuses in front of the_string.
-    """
-    pos = 0
-    minuses_and_pluses = ''
-    while True:
-        if pos == len(the_string):
-            break
-        if the_string[pos] in {'+', '-'}:
-            minuses_and_pluses += the_string[pos]
-            pos += 1
-        else:
-            break
-    return minuses_and_pluses
-
-
-def get_number_from_string(fraction_as_string):
-    """Changes a string that represents a fraction into a tuple (numerator, denominator).
-    Args:
-        fraction_as_string (str): can be in a form of a decimal (e.g. "1.25"), a fraction ("34/56") or an integer.
-
-    Returns:
-        A tuple (numerator, denominator).
-    """
-    while fraction_as_string[0] == '(' and fraction_as_string[-1] == ')':
-        fraction_as_string = fraction_as_string[1:-1]
-    fraction_as_string = str(fraction_as_string)
-    minuses_and_pluses = get_front_minuses_and_pluses(fraction_as_string)
-    fraction_as_string = fraction_as_string[len(minuses_and_pluses):]
-    sgn = eval(minuses_and_pluses + '1')
-    if fraction_as_string == '':  # a field left blank is to result in 0
-        return 0, 1
-    elif '/' in fraction_as_string:
-        slash_position = fraction_as_string.find("/")
-        numerator = int(fraction_as_string[:slash_position])
-        den = int(fraction_as_string[slash_position + 1:])
-        if den < 0:
-            numerator, den = -numerator, -den
-    elif '.' in fraction_as_string:
-        n = 0
-        numerator = float(fraction_as_string)
-        while True:
-            if numerator == int(numerator):
-                break
-            else:
-                numerator *= 10
-                n += 1
-        numerator = int(numerator)
-        den = int(10 ** n)
-    elif float(fraction_as_string) == int(float(fraction_as_string)):
-        return int(float(fraction_as_string)), 1
-    else:
-        return None, None
-    div = math.gcd(den, numerator)
-    numerator = int(numerator / div)
-    den = int(den / div)
-    return sgn * numerator, den
-
-
-def insert_latex_indices(input_string):
-    # firstly deal with 'M^T' and 'M^(T)' -> 'M^{T}'
-    for idx in {'^(T)', '^T'}:
-        while True:
-            pos = input_string.find(idx)
-            if pos < 0:
-                break
-            input_string = input_string[:pos + 1] + '{T}' + input_string[pos + len(idx):]
-
-    # now deal with 'M^(...)' -> 'M^{...}'
-    brackets = algebra.get_pairs_of_brackets_from_string(input_string)
-    starts_of_indices = [idx + 1 for idx in range(len(input_string)) if input_string[idx] == '^'
-                         if (idx + 1 < len(input_string) and input_string[idx + 1] != '{')]
-    remaining_pos = list()
-    for start_pos in starts_of_indices:
-        if input_string[start_pos] == '(':
-            both_pos = find_tuple_in_list_of_tuples_by_coordinate(brackets, start_pos)
-            if both_pos:
-                end_pos = both_pos[1]
-                input_string = \
-                    input_string[:start_pos] + '{' + \
-                    input_string[start_pos + 1: end_pos] + '}' + input_string[end_pos + 1:]
-        else:
-            remaining_pos.append(start_pos)
-
-    # now deal with 'M^-10' -> 'M^{-10}' and with 'M^10' -> 'M^{10}'
-    indices_to_tackle = list()
-    for start_pos in remaining_pos:
-        end_pos = start_pos
-        if ord(input_string[end_pos]) == ord("-"):
-            end_pos += 1
-        while end_pos < len(input_string) and input_string[end_pos].isdigit():
-            end_pos += 1
-        if end_pos < start_pos:
-            continue
-        indices_to_tackle.append((start_pos, end_pos))
-
-    indices_to_tackle.sort()
-    # find inner indicies: ...^(...^(...)...)
-    # 1. find an inner index
-    # 2. add curly braces to the string
-    # 3. remove the tuple with the index from the list
-    # 4. add 2 to all following indicies
-    # 5. break when no inner left
-    idx = 0
-    while True:
-        if idx >= len(indices_to_tackle):
-            break
-        inner_id = get_inner_pair_id(indices_to_tackle, idx)
-        if inner_id:
-            start_pos, end_pos = indices_to_tackle[inner_id]
-            input_string = \
-                input_string[:start_pos] + '{' + input_string[start_pos + 1: end_pos] + '}' + input_string[end_pos + 1:]
-            indices_to_tackle.pop(inner_id)
-            for i in range(inner_id, len(indices_to_tackle)):
-                indices_to_tackle[i] = (indices_to_tackle[i][0] + 2, indices_to_tackle[i][1] + 2)
-        else:
-            idx += 1
-
-    # all inner removed, so only mutually exclusive left
-    indices_to_tackle.sort(reverse=True)
-    for start_pos, end_pos in indices_to_tackle:
-        input_string = input_string[:start_pos] + '{' + input_string[start_pos: end_pos] + '}' + \
-                       input_string[end_pos:]
-
-    return input_string
-
-
-def insert_latex_multiplications(input_string):
-    multiplication_signs_ids = [idx for idx in range(len(input_string)) if input_string[idx] == '*']
-    multiplication_signs_ids.sort(reverse=True)
-    for idx in multiplication_signs_ids:
-        input_string = input_string[:idx] + '\\times ' + input_string[idx + 1:]
-    return input_string
-
-
-def change_latex_restricted_words(input_string):
-    for restricted_word in config.MATRIX_NAME_RESTRICTED_WORDS:
-        word = restricted_word.upper()
-        pos = -6 - len(word)
-        while True:
-            pos = input_string.find(word, pos + len(word) + 6)
-            if pos < 0:
-                break
-            input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[pos + len(word):]
-
-    for restricted_word_with_prefix in {('ref', 'r')}:
-        restricted_word, prefix = restricted_word_with_prefix
-        word = restricted_word.upper()
-        pos = -6 - len(word) - len(prefix)
-        while True:
-            pos = input_string.find(word, pos + len(prefix) + len(word) + 6)
-            if pos < 0:
-                break
-            if input_string[pos - 1: pos + len(word) + len(prefix) - 1].lower() == (prefix + word).lower():
-                break
-            input_string = input_string[:pos] + '\\text{{{}}}'.format(word.lower()) + input_string[
-                                                                                       pos + len(word):]
-    return input_string
 
 
 def remove_redundant_brackets(input_string, brackets):
@@ -1462,7 +1278,6 @@ def debug_intro(inspect_stack):
 
 
 if __name__ == '__main__':
-    print(get_brackets_simplified('h=a'))
     pass
 
 # TESTS:
