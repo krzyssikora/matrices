@@ -483,8 +483,13 @@ class StringTransformer:
                 self.brackets_closing.remove(pos2)
         self.correct_so_far = True
 
-    def read_input_within_brackets(self, input_iteration):
-        mutually_exclusive_brackets = get_mutually_exclusive_brackets(self.brackets)
+    def read_input_within_brackets(self, read_range, input_iteration):
+        starting_position, ending_position = read_range
+        brackets_in_range = [(s, e) for (s, e) in self.brackets if
+                             (s >= starting_position) and (e < ending_position)]
+        mutually_exclusive_brackets = get_mutually_exclusive_brackets(brackets_in_range)
+
+        _logger.debug(f'mutually_exclusive_brackets: {mutually_exclusive_brackets}')
         for opening_index, closing_index in mutually_exclusive_brackets:
             self.latex_dict[opening_index] = '{('
             self.latex_dict[closing_index] = ')}'
@@ -521,6 +526,7 @@ class StringTransformer:
             self.correct_so_far = False
             self.output_message = 'A power cannot be evaluated.'
 
+        _logger.debug(f'clean_powers, read_range: {read_range}')
         starting_position, ending_position = read_range
         caret_indexes = [idx for idx, char in enumerate(self.input_string) if char == '^'
                          and idx in range(starting_position, ending_position)]
@@ -529,7 +535,7 @@ class StringTransformer:
             if caret_index in {0, len(self.input_string) - 1}:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[caret_index] = '^'
+            self.latex_dict[caret_index] = '^{'
             indexes = list(self.values_dict)
             indexes_before = [idx for idx in indexes if idx < caret_index]
             indexes_after = [idx for idx in indexes if idx > caret_index]
@@ -541,7 +547,7 @@ class StringTransformer:
                 return set_attributes_when_incorrect()
 
             self.latex_dict[base_idx] = '{' + self.latex_dict.get(base_idx, '')
-            self.latex_dict[ending_position] = self.latex_dict.get(ending_position, '') + '}'
+            self.latex_dict[exponent_idx] = self.latex_dict.get(exponent_idx, '') + '}}'
 
             base_value = self.values_dict[base_idx]
             exponent_value = self.values_dict[exponent_idx]
@@ -781,8 +787,8 @@ class StringTransformer:
         self.debug(inspect.stack(),
                    'AFTER PREFIX read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
-        if input_iteration == 0:
-            self.read_input_within_brackets(input_iteration)
+        if input_iteration >= 0:
+            self.read_input_within_brackets(read_range, input_iteration)
         if not self.correct_so_far:
             return
 
