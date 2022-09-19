@@ -1,8 +1,8 @@
 import logging
 
-# DATABASE = "matrices/database/matrices_rational.sqlite"
+DATABASE = "matrices/database/matrices_rational.sqlite"
 # DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
-DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
+# DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
 
 MATRIX_NAME_RESTRICTED_WORDS = {'RREF', 'DEL', 'AUG', 'SUB', 'DET'}
 

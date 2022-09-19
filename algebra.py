@@ -113,7 +113,11 @@ def get_product_of_fractions(numerator_1, denominator_1, numerator_2, denominato
         Returns:
             A tuple (top, bottom) representing the simplified product of two fractions.
     """
-    return get_fraction_cancelled_down(numerator_1 * numerator_2, denominator_1 * denominator_2)
+    num, den = get_fraction_cancelled_down(numerator_1 * numerator_2, denominator_1 * denominator_2)
+    if den:
+        return num, den
+    else:
+        return None
 
 
 def get_fraction_raised_to_power(numerator, denominator, exponent):
@@ -455,7 +459,7 @@ class Matrix:
         """Returns the inverse of the matrix."""
         if self.rows != self.columns:
             return None
-        if self.det() == 0:
+        if self.det()[0] == 0:
             return None
         denominator = 1
         for row in range(self.rows):
@@ -516,6 +520,9 @@ class Matrix:
         else:
             multiplier = self
 
+        if multiplier is None:
+            return None
+        _logger.debug('multiplier: {}, exponent: {}'.format(multiplier, exponent))
         for _ in range(exponent):
             return_value = return_value.multiply_matrix(multiplier)
 

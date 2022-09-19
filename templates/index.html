@@ -1,7 +1,7 @@
 {% extends "navbar.html" %}
 {% block navbar %}
 <div class="main">
-    <div id="algebra"><h1 class="section-header" id="algebra-header">algebra</h1>
+    <div class="main-column" id="algebra"><h1 class="section-header" id="algebra-header">algebra</h1>
         <div class="section-content">
             <!-- <div class="algebra-chunk">
                 <p class="app-answer">
@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <div id="storage">
+    <div class="main-column" id="storage">
         <h1 class="section-header" id="storage-header">storage</h1>
         <div class="section-content">
             {% for matrix_data in matrices_list %}
@@ -29,57 +29,9 @@
         </div>
     </div>
 
-    <!-- Modal for waiting for maths to load -->
-    <div id="pop-up-universal" class="modal">
-        <div class="modal-content animate" id="modal_div"></div>
-    </div>
-
-    <!-- Modal for new matrix -->
-    <div id="enter_matrix" class="modal">
-        <span onclick="document.getElementById('enter_matrix').style.display='none'"
-        class="close" title="Close Modal">&times;</span>
-
-        <!-- Modal Content -->
-        <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
-            <div class="pop-up-form-container" id="matrix-info">
-                <div id="matrix-name-div"></div>
-                <div id="matrix-dimensions-div"></div>
-            </div>
-            <div class="pop-up-form-container" id="matrix-input">
-            </div>
-            <div class="pop-up-form-container" id="matrix-rest">
-                <button class="pop-up-form-button" type="button" id="new-matrix-confirm-button">confirm</button>
-                <div id="pop-up-form-info">
-                    If you leave a cell empty, a value of 0 will be assigned.
-                </div>
-                <div id="pop-up-form-cancelbtn-container">
-                    <button class="pop-up-form-button" type="button"
-                    onclick="document.getElementById('enter_matrix').style.display='none'" class="cancelbtn">cancel</button>
-                </div>
-            </div>
-        </form>
-    </div>
-    <!-- Modal for name of matrix to be saved from outcome -->
-    <div id="new_matrix_name" class="modal">
-        <span onclick="document.getElementById('new_matrix_name').style.display='none'"
-        class="close" title="Close Modal">&times;</span>
-
-        <!-- Modal Content -->
-        <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
-            <div class="pop-up-form-container" id="matrix-name-info">
-                <div id="matrix-only-name-div"></div>
-            </div>
-            <div class="pop-up-form-container" id="matrix-name-rest">
-                <button class="pop-up-form-button" type="button" id="new-matrix-name-confirm-button">confirm</button>
-                <div id="pop-up-form-cancelbtn-container">
-                    <button class="pop-up-form-button" type="button"
-                    onclick="document.getElementById('new_matrix_name').style.display='none'" class="cancelbtn">cancel</button>
-                </div>
-            </div>
-        </form>
-    </div>
+    
+    {% include 'modals.html' %}
 </div>
-{% include 'help_modal.html' %}
     
 <script src="{{ url_for('static', filename='js/module.js') }}"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>

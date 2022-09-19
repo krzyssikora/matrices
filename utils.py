@@ -48,6 +48,7 @@ class StringTransformer:
             # ('self.brackets_opening', self.brackets_opening),
             # ('self.brackets_closing', self.brackets_closing),
             ('self.output_message', self.output_message),
+            ('self.output_value', self.output_value),
             ('self.input_latex', self.input_latex),
             ('self.correct_so_far', self.correct_so_far),
             ('self.refresh_storage', self.refresh_storage),
@@ -218,6 +219,7 @@ class StringTransformer:
             self.correct_so_far = False
             self.input_string = input_string
             self.values_dict = objects_dict
+            self.output_message = 'Incorrect input.'
             return
 
         # collect numbers
@@ -328,12 +330,13 @@ class StringTransformer:
             simplified_input_string = get_brackets_simplified(self.input_string)
 
             if simplified_input_string is None:
-                self.output_message = 'unbalanced brackets'
+                self.output_message = 'Unbalanced brackets.'
                 self.latex_dict = {0: self.input_string}
                 self.correct_so_far = False
             else:
                 self.input_string = simplified_input_string
                 self.get_numbers_and_matrices_from_string()
+                print(f'2: {self.correct_so_far}')
                 _logger.debug('simplify_input_string, AFTER get_numbers_and_matrices_from_string')
                 _logger.debug('self.input_string: {}'.format(self.input_string))
                 _logger.debug('self.values_dict: {}'.format(self.values_dict))
@@ -523,9 +526,9 @@ class StringTransformer:
         """
         # 'base' of the power will be between pos_base0 and pos_base1
         # 'exponent' will be between pos_power0 and pos_power1
-        def set_attributes_when_incorrect():
+        def set_attributes_when_incorrect(message=None):
             self.correct_so_far = False
-            self.output_message = 'A power cannot be evaluated.'
+            self.output_message = message if message else 'A power cannot be evaluated.'
 
         _logger.debug(f'clean_powers, read_range: {read_range}')
         starting_position, ending_position = read_range
@@ -571,6 +574,8 @@ class StringTransformer:
                 if isinstance(base_value, algebra.Matrix):
                     # 2. base: integer,  exponent: integer
                     new_value = base_value.raise_matrix_to_a_power(exponent_value[0])
+                    if new_value is None:
+                        return set_attributes_when_incorrect('The inverse does not exist.')
                 elif isinstance(base_value, tuple):
                     # 3. base: number,  exponent: integer
                     new_value = algebra.get_fraction_raised_to_power(base_value[0], base_value[1], exponent_value[0])
@@ -579,6 +584,8 @@ class StringTransformer:
             else:
                 return set_attributes_when_incorrect()
 
+            if new_value is None:
+                return set_attributes_when_incorrect()
             # introduce new value into values_dict
             for idx in range(base_idx, exponent_idx + 1):
                 if idx in self.values_dict:
@@ -683,7 +690,11 @@ class StringTransformer:
                     return_value = algebra.get_fraction_cancelled_down(m10 * m20, m11 * m21)
                     self.latex_dict[last_operation_position] = '\\times'
                 elif operation == '/':
-                    return_value = algebra.get_fraction_cancelled_down(m10 * m21, m11 * m20)
+                    return_value = algebra.get_product_of_fractions(m10, m11, m21, m20)
+                    if return_value is None:
+                        self.output_message = 'Division by 0.'
+                        self.correct_so_far = False
+                        return
                     _logger.debug('BEFORE FRAC: {}'.format(self.latex_dict))
                     self.latex_dict[last_operation_position] = '}{'
                     self.latex_dict[initial_position] = \
@@ -754,9 +765,13 @@ class StringTransformer:
         start, end = read_range
         if end - start == 1:
             if input_iteration == 0:
+                if len(self.values_dict) == 0:
+                    self.output_message = 'Incorrect input.'
+                    self.correct_so_far = False
+                    return
                 self.output_message = get_string_from_dict(self.values_dict)
                 self.input_latex = get_latex_from_dict(self.latex_dict)
-                self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, None)
+                self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, '')
                 self.debug(inspect.stack(),
                            'returning...read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
             return
@@ -796,11 +811,10 @@ class StringTransformer:
                    'AFTER BRACKETS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         self.clean_powers(read_range)
-        if not self.correct_so_far:
-            return
-
         self.debug(inspect.stack(),
                    'AFTER POWERS read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
+        if not self.correct_so_far:
+            return
 
         self.split_input_by_operations(0, read_range, input_iteration)
         if not self.correct_so_far:
@@ -821,12 +835,15 @@ class StringTransformer:
             _logger.debug(f'>>> read_range: {read_range}, values_dicts.keys: {self.values_dict.keys()}')
             self.correct_so_far = self.there_is_exactly_one_value_in_range(read_range)
 
-        if input_iteration == 0 and self.correct_so_far:
-            _logger.debug('self.values_dict: {}'.format(self.values_dict))
-            _logger.debug('self.latex_dict: {}'.format(self.latex_dict))
-            self.output_message = get_string_from_dict(self.values_dict)
-            self.input_latex = get_latex_from_dict(self.latex_dict)
-            self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, None)
+        if input_iteration == 0:
+            if self.correct_so_far:
+                _logger.debug('self.values_dict: {}'.format(self.values_dict))
+                _logger.debug('self.latex_dict: {}'.format(self.latex_dict))
+                self.output_message = get_string_from_dict(self.values_dict)
+                self.input_latex = get_latex_from_dict(self.latex_dict)
+                self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, None)
+            else:
+                self.output_message = 'Incorrect input.'
 
         self.debug(inspect.stack(), 'FINALLY read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
@@ -1095,6 +1112,8 @@ def get_string_from_dict(dict_to_convert):
             new_value = str(value[0]) if value[1] == 1 else f'\\frac{{{value[0]}}}{{{value[1]}}}'
         elif isinstance(value, algebra.Matrix):
             new_value = value.get_latex_form()
+        elif value is None:
+            return 'Incorrect input.'
         else:
             new_value = f'>>{str(value)}<<'
         return_string += new_value
@@ -1181,52 +1200,67 @@ def get_input_read(user_input, matrices_dict):
                                 or simple info string otherwise
         input_latexed (str) - if user_input can be processed, then this shows it in LaTeXed and mathjax wrapped form
         refresh_storage (bool) - indicates whether the storage section of the main page is to be refreshed
+        saveable (bool) - can the output be saved as a matrix
+        output_value (algebra.Matrix) - the value to be saved when clicked
     """
     user_input = user_input.replace(' ', '')
-    transformer = StringTransformer(input_string=user_input.strip(),
-                                    matrices_dict=matrices_dict,
-                                    )
-    transformer.debug(inspect.stack(), 'BEFORE read_input')
-    if transformer.processed:
-        return transformer.output_message, transformer.input_latex, transformer.refresh_storage
+    try:
+        transformer = StringTransformer(input_string=user_input.strip(),
+                                        matrices_dict=matrices_dict,
+                                        )
+        transformer.debug(inspect.stack(), 'BEFORE read_input')
+        if transformer.processed:
+            return transformer.output_message, \
+                   transformer.input_latex, \
+                   transformer.refresh_storage, False, None
 
-    if not transformer.correct_so_far:
-        return mathjax_text_wrap(transformer.output_message), \
-               transformer.latex_dict.get(0, transformer.input_string), \
-               transformer.refresh_storage
-    transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
+        if not transformer.correct_so_far:
+            return mathjax_text_wrap(transformer.output_message), \
+                   mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
+                   transformer.refresh_storage, False, None
+        transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
 
-    saveable = False
-    output_value = transformer.output_value
-    if transformer.correct_so_far:
-        input_processed = mathjax_wrap(transformer.output_message)
-        input_latexed = mathjax_wrap(transformer.input_latex)
-        if isinstance(transformer.output_value, algebra.Matrix):
-            saveable = True
-            output_value = {
-                'name': '',
-                'rows': output_value.rows,
-                'columns': output_value.columns,
-                'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
-            }
-        if transformer.potential_matrix_name:
-            refresh_storage = 1
-            keys = list(transformer.values_dict)
-            if len(keys) != 1:
-                _logger.error(f'to many values in dict: {transformer.values_dict}')
-                return mathjax_text_wrap('error'), transformer.original_user_input, False
-            the_key = keys[0]
-            if not isinstance(the_key, algebra.Matrix):
-                return mathjax_text_wrap('Only matrices can be saved.'), transformer.original_user_input, False
-            _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
-            matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
-            database.save_matrix(transformer.potential_matrix_name, matrices_dict)
+        saveable = False
+        output_value = transformer.output_value
+        if transformer.correct_so_far:
+            input_processed = mathjax_wrap(transformer.output_message)
+            input_latexed = mathjax_wrap(transformer.input_latex)
+            if isinstance(transformer.output_value, algebra.Matrix):
+                saveable = True
+                output_value = {
+                    'name': '',
+                    'rows': output_value.rows,
+                    'columns': output_value.columns,
+                    'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
+                }
+            if transformer.potential_matrix_name:
+                refresh_storage = 1
+                keys = list(transformer.values_dict)
+                if len(keys) != 1:
+                    _logger.error(f'to many values in dict: {transformer.values_dict}')
+                    return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
+                the_key = keys[0]
+                if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
+                    return mathjax_text_wrap('Only matrices can be saved.'), \
+                           mathjax_text_wrap(transformer.original_user_input), False, \
+                           False, None
+                _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
+                matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
+                database.save_matrix(transformer.potential_matrix_name, matrices_dict)
+            else:
+                refresh_storage = 0
         else:
+            input_processed = mathjax_text_wrap(transformer.output_message)
+            input_latexed = transformer.original_user_input
             refresh_storage = 0
-    else:
-        input_processed = mathjax_text_wrap(transformer.output_message)
-        input_latexed = transformer.original_user_input
-        refresh_storage = 0
+    except Exception as e:
+        input_processed = mathjax_text_wrap('Incorrect input.')
+        input_latexed = user_input
+        refresh_storage = False
+        saveable = False
+        output_value = None
+        _logger.error('en error occurred. {}'.format(e))
+        raise
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
 

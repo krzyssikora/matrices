@@ -8,6 +8,7 @@
   --left-width: calc(70% - 2 * var(--items-padding));
   --right-width: calc(30% - 2 * var(--items-padding));
   --new-matrix-button-height: 45px;
+  --scrollbar-width: 6px;
   /* colours */
   --colour-left: rgb(253, 248, 207);
   --colour-right: rgb(207, 237, 255);
@@ -58,7 +59,6 @@ body {
 /* Main content */
 .main {
   margin-top: var(--navbar-height); /* to avoid content overlay */
-  height: 100%;
   overflow: hidden;
   background-color: beige;
 } 
@@ -113,13 +113,16 @@ body {
   margin-bottom: var(--new-matrix-button-height);
 }
 
-#algebra {
+.main-column {
   float: left;
+  overflow: scroll;
+  height: var(--section-height);
+}
+
+#algebra {
   padding: var(--items-padding);
   width: var(--left-width);
   background: var(--colour-left);
-  height: var(--section-height);
-  overflow: auto;
   direction: rtl;
   text-align: left;
 }
@@ -135,7 +138,7 @@ body {
 span.deleteicon span {
   position: relative;
   display: block;
-  /* float: right; */
+  float: right;
   right: 5px;
   left: 5px;
   top: -10px;
@@ -186,7 +189,6 @@ span#clearfieldicon span:hover {
   font-size: large;
 }
 
-
 .entered-formula {
   background-color: var(--colour-left-formula);
   margin: var(--standard-margin-padding);
@@ -229,12 +231,9 @@ span#clearfieldicon span:hover {
 }
 
 #storage {
-  float: right;
   padding: var(--items-padding);
   width: var(--right-width);
   background: var(--colour-right);
-  height: var(--section-height);
-  overflow: auto;
 }
 
 #add-matrix {
@@ -242,7 +241,7 @@ span#clearfieldicon span:hover {
   margin-left: calc(-1 * var(--items-padding));
   width: calc(var(--right-width) - 2 * var(--standard-margin-padding));
   height: calc(var(--new-matrix-button-height) - 2*var(--standard-margin-padding));
-  bottom: calc(var(--standard-margin-padding) + var(--items-padding));
+  bottom: calc(var(--standard-margin-padding) + var(--items-padding) + var(--scrollbar-width) + 2px);
   background-color: var(--colour-navbar-background);
   padding: var(--standard-margin-padding);
   border: 1px solid var(--colour-navbar-background-hover);

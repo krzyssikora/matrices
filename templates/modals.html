@@ -1,0 +1,72 @@
+<!-- Modal for waiting for maths to load -->
+<div id="pop-up-universal" class="modal">
+    <div class="modal-content animate" id="modal_div"></div>
+</div>
+
+<!-- Modal for new matrix -->
+<div id="enter_matrix" class="modal">
+    <span onclick="document.getElementById('enter_matrix').style.display='none'"
+    class="close" title="Close Modal">&times;</span>
+
+    <!-- Modal Content -->
+    <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
+        <div class="pop-up-form-container" id="matrix-info">
+            <div id="matrix-name-div"></div>
+            <div id="matrix-dimensions-div"></div>
+        </div>
+        <div class="pop-up-form-container" id="matrix-input">
+        </div>
+        <div class="pop-up-form-container" id="matrix-rest">
+            <button class="pop-up-form-button" type="button" id="new-matrix-confirm-button">confirm</button>
+            <div id="pop-up-form-info">
+                If you leave a cell empty, a value of 0 will be assigned.
+            </div>
+            <div id="pop-up-form-cancelbtn-container">
+                <button class="pop-up-form-button" type="button"
+                onclick="document.getElementById('enter_matrix').style.display='none'" class="cancelbtn">cancel</button>
+            </div>
+        </div>
+    </form>
+</div>
+<!-- Modal for name of matrix to be saved from outcome -->
+<div id="new_matrix_name" class="modal">
+    <span onclick="document.getElementById('new_matrix_name').style.display='none'"
+    class="close" title="Close Modal">&times;</span>
+
+    <!-- Modal Content -->
+    <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
+        <div class="pop-up-form-container" id="matrix-name-info">
+            <div id="matrix-only-name-div"></div>
+        </div>
+        <div class="pop-up-form-container" id="matrix-name-rest">
+            <button class="pop-up-form-button" type="button" id="new-matrix-name-confirm-button">confirm</button>
+            <div id="pop-up-form-cancelbtn-container">
+                <button class="pop-up-form-button" type="button"
+                onclick="document.getElementById('new_matrix_name').style.display='none'" class="cancelbtn">cancel</button>
+            </div>
+        </div>
+    </form>
+</div>
+<!-- Modal for new matrix -->
+<div id="help-command" class="modal">
+    <span onclick="document.getElementById('help-command').style.display='none'"
+    class="close" title="Close Modal">&times;</span>
+
+    <!-- Modal Content -->
+    <div class="modal-content animate" id="help-command-info">
+        <div class="pop-up-form-container">
+            <table class="table-command-help">
+                <thead>
+                    <tr>
+                        <th>command/-s</th><th>action</th>
+                    </tr>
+                </thead>
+                <tbody id="help-command-table">
+                    <tr>
+                        <td>cls</td><td>clears algebra window</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
