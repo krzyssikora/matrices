@@ -1,8 +1,8 @@
 import logging
 
-DATABASE = "matrices/database/matrices_rational.sqlite"
+# DATABASE = "matrices/database/matrices_rational.sqlite"
 # DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
-# DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
+DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
 
 MATRIX_NAME_RESTRICTED_WORDS = {'RREF', 'DEL', 'AUG', 'SUB', 'DET'}
 
@@ -34,11 +34,12 @@ help_general_info = [["action", "command/-s", "help command"],
                      ["assign result to a matrix", "M = ...</br>"
                                                    "(both to a new or existing matrix)", "help ="],
                      ["create a new matrix", "create", "help create"],
-                     ["delete a matrix from memory and database", "del M, del(M)", "help del"],
-                     ["       or a few matrices at once", "del(M, N)", ""],
+                     ["delete a matrix from memory and database </br>"
+                      "or a few matrices at once", "del M, del(M) or </br>"
+                                                   "del(M, N)", "help del"],
                      # ["change a matrix into a form that", "wolframalpha(M)", "help wolframalpha"],
                      # ["       can be used in wolframalpha.com", "", ""],
-                     ["", "// brackets may be used, </br> but only the round ones", ""],
+                     # ["", "// brackets may be used, </br> but only the round ones", ""],
                      # ["end application", "end, quit, exit, out", "help end"]
                      ]
 

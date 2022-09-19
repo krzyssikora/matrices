@@ -738,7 +738,4 @@ class EmptyMatrix(Matrix):
 if __name__ == '__main__':
     matrices = database.import_from_database()
     mat_a = matrices['A']
-    print(mat_a)
-    mat_i = mat_a.inverse()
-    print(mat_i.multiply_matrix(mat_i).multiply_matrix(mat_i))
-    print(mat_a.raise_matrix_to_a_power(-3))
+    print(mat_a.mat)

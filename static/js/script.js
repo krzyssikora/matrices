@@ -1,8 +1,10 @@
 var matrices_names;
 // const maxMatrixDimension = 9;
 var algebra_content;
+var algebra_content_idx = 1;
 var previousInputs = [];
 var previousInputIndex = -1;
+var output_value;
 
 (function() {
     "use strict";
@@ -115,7 +117,7 @@ var previousInputIndex = -1;
     var algebra_header = document.getElementById('algebra-header');
     algebra_header.style.width = algebra_box.clientWidth;
 
-    function createAlgebraChunk(in_text, out_text) {
+    function createAlgebraChunk(in_text, out_text, saveable, output_value) {
         var level_0 = document.createElement('span');
         level_0.className = 'deleteicon';
         var level_1 = document.createElement('div');
@@ -129,13 +131,20 @@ var previousInputIndex = -1;
         level_2_out.className = 'app-answer';
         level_2_out.innerHTML = out_text;
         level_1.appendChild(level_2_cross);
+        if (saveable) {
+            var level_2_save = document.createElement('span');
+            level_2_save.innerHTML = '&darr;'
+            level_2_save.id = `get_new_matrix_name-${algebra_content_idx}`;
+            level_1.appendChild(level_2_save);
+            
+        };
         level_1.appendChild(level_2_in);
         level_1.appendChild(level_2_out);
         level_0.appendChild(level_1);
         level_2_cross.addEventListener('click', function(e){
             e.preventDefault();
             level_0.remove();
-        })
+        });
         return level_0;
     };
 
@@ -174,11 +183,17 @@ var previousInputIndex = -1;
                 if (refresh_storage == 1) {
                     updateStorage();
                 };
-                var new_element = createAlgebraChunk(in_text, out_text);
+                var saveable = data['saveable'];
+                var output_value = data['output_value'];
+                var new_element = createAlgebraChunk(in_text, out_text, saveable, output_value);
                 var container = algebra_box.querySelector('.section-content');
                 var last_child = document.getElementById('clearfieldicon');
                 container.insertBefore(new_element, last_child);
                 user_input_field.value = '';
+                if (saveable) {
+                    addListenerNewMatrixName(output_value);
+                };
+                algebra_content_idx ++;
                 MathJax.typeset();
                 ScrollToBottom(document.getElementById('algebra'))
                 focusOnInput();
@@ -234,9 +249,9 @@ var previousInputIndex = -1;
     })
 
 
-    function sendMatrixToDelete(idx) {
+    function sendMatrixToDelete(matrix_name) {
 		var request = new XMLHttpRequest();
-		request.open('POST', `/delete_matrix/${idx}`);
+		request.open('POST', `/delete_matrix/${matrix_name}`);
 		request.send();
 	};
 
@@ -264,7 +279,7 @@ var previousInputIndex = -1;
             return name_not_used_message
         };
 
-        for (let word of ["DET", "CLS", "HELP", "CREATE"]) {
+        for (let word of ["DET", "CLS", "HELP", "CREATE", "DEL"]) {
             if (matrix_name.includes(word)) {
                 return [false, `A matrix name cannot contain "${word}", it is a restricted word.`]
             };
@@ -320,6 +335,11 @@ var previousInputIndex = -1;
     var matrix_name_field;
     var rows_field;
     var columns_field;
+    // define divs for new matrix name from output
+    var matrix_only_name_div = document.getElementById('matrix-only-name-div');
+    var matrix_name_rest_div = document.getElementById('matrix-name-rest');
+    var matrix_only_name_field;
+    
 
     function refreshNewMatrixDivs() {
         matrix_name_div.innerHTML = '<label class="pop-up-form-label" for="matrix-name" id="matrix-name-label"><b>matrix name</b></label><input class="pop-up-form-input" type="text" name="matrix-name" id="matrix-name"><span class="input-error-info" id="matrix-error-info"></span>';
@@ -415,7 +435,7 @@ var previousInputIndex = -1;
             });
 
             // columns
-            // tab should foucus on columns input
+            // tab should focus on columns input
             columns_field.addEventListener('keydown', (e) => {
                 var key = e.charCode || e.keyCode || 0;
                 if ((key == 9 || key == '9') && (rows_number > 0)) {
@@ -462,6 +482,30 @@ var previousInputIndex = -1;
 
         addStorageListeners();
     });
+
+    function checkNameAndConfirm(matrix_only_name_field, output_value) {
+        var matrix_name = matrix_only_name_field.value.toUpperCase();
+        var name_checked = correctMatrixName(matrix_name);
+        var name_correct = name_checked[0];
+        var name_message = name_checked[1];
+
+        if (name_correct) {
+            document.getElementById('new_matrix_name').style.display = 'none';
+            var name = matrix_only_name_field.value;
+            var rows = output_value['rows'];
+            var columns = output_value['columns'];
+            var values = output_value['values'];
+            var matrix = {'name': name, 'rows': rows, 'columns': columns, 'values': values};
+            algebra_content = $("#algebra div.section-content").html();
+            sendMatrixDataToCreate(matrix);
+            updateStorage();
+            addStorageListeners();
+        } else {
+            var info = document.getElementById('matrix-name-error-info');
+            info.style.display = 'block';
+            info.innerHTML = name_message;
+        };
+    };
     
     addStorageListeners();
 
@@ -471,9 +515,10 @@ var previousInputIndex = -1;
             let el = e.currentTarget
             let idx = el.id.match(/.+-(\d+)$/)[1]
             let dom_idx = `storage-matrix-${idx}`;
+            let matrix_name = document.getElementById(dom_idx).children[1].dataset.name
             document.getElementById(dom_idx).remove();
             // window.location.href = '/';
-            sendMatrixToDelete(idx);
+            sendMatrixToDelete(matrix_name);
         })
     };
 
@@ -527,6 +572,35 @@ var previousInputIndex = -1;
             });
         });
     };
+
+    function addListenerNewMatrixName(output_value) {
+        document.getElementById(`get_new_matrix_name-${algebra_content_idx}`).addEventListener('click', function(e) {
+            e.preventDefault();
+            matrix_only_name_div.innerHTML = '<label class="pop-up-form-label" for="matrix-only-name" id="matrix-only-name-label"><b>enter matrix name for storing the output</b></label><input class="pop-up-form-input" type="text" name="matrix-only-name" id="matrix-only-name"><span class="input-error-info" id="matrix-name-error-info"></span>';
+            matrix_only_name_div.style.display = 'none';
+            matrix_name_rest_div.style.display = 'none';
+            matrix_only_name_field = document.getElementById('matrix-only-name');
+            document.getElementById('new_matrix_name').style.display = 'block';
+            matrix_only_name_div.style.display = 'block';
+            matrix_name_rest_div.style.display = 'block';
+
+            matrix_only_name_field.focus();
+   
+            // enter 
+            matrix_only_name_field.addEventListener('keypress', (e) => {
+                var key = e.charCode || e.keyCode || 0;
+                if (key == 13) {
+                    e.preventDefault();
+                    checkNameAndConfirm(matrix_only_name_field, output_value);
+                }
+            });
+            // confirm button
+            document.getElementById('new-matrix-name-confirm-button').addEventListener('click', e => {
+                e.preventDefault();
+                checkNameAndConfirm(matrix_only_name_field, output_value) 
+            });
+        })
+    }
 
     function addStorageListeners() {
         addListenersCopyMatrixToInput();

@@ -19,6 +19,7 @@ class StringTransformer:
         self.brackets_opening = None
         self.brackets_closing = None
 
+        self.output_value = None
         self.output_message = None
         self.input_latex = None
         self.correct_so_far = True
@@ -748,8 +749,6 @@ class StringTransformer:
             return False
 
     def read_input(self, read_range, input_iteration=0):
-        # if input_iteration > 5:
-        #     quit()
         self.debug(inspect.stack(),
                    'INITIALLY read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
         start, end = read_range
@@ -757,6 +756,7 @@ class StringTransformer:
             if input_iteration == 0:
                 self.output_message = get_string_from_dict(self.values_dict)
                 self.input_latex = get_latex_from_dict(self.latex_dict)
+                self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, None)
                 self.debug(inspect.stack(),
                            'returning...read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
             return
@@ -826,6 +826,7 @@ class StringTransformer:
             _logger.debug('self.latex_dict: {}'.format(self.latex_dict))
             self.output_message = get_string_from_dict(self.values_dict)
             self.input_latex = get_latex_from_dict(self.latex_dict)
+            self.output_value = self.values_dict.get(min(list(self.values_dict)) if self.values_dict else 0, None)
 
         self.debug(inspect.stack(), 'FINALLY read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
@@ -1157,6 +1158,18 @@ def correct_matrix_name(matrix_name_as_string):
     return True, ''
 
 
+def get_values_for_js_matrix(list_of_rows, denominator):
+    single_list = list()
+    for row in list_of_rows:
+        single_list += row
+    values = list()
+    for elt in single_list:
+        num, den = algebra.get_fraction_cancelled_down(elt, denominator)
+        den = str(den)
+        values.append((f'minussign{str(-num)}' if elt < 0 else str(num)) + 'slashsign' + den)
+    return values
+
+
 def get_input_read(user_input, matrices_dict):
     """
     Args:
@@ -1183,9 +1196,19 @@ def get_input_read(user_input, matrices_dict):
                transformer.refresh_storage
     transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
 
+    saveable = False
+    output_value = transformer.output_value
     if transformer.correct_so_far:
         input_processed = mathjax_wrap(transformer.output_message)
         input_latexed = mathjax_wrap(transformer.input_latex)
+        if isinstance(transformer.output_value, algebra.Matrix):
+            saveable = True
+            output_value = {
+                'name': '',
+                'rows': output_value.rows,
+                'columns': output_value.columns,
+                'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
+            }
         if transformer.potential_matrix_name:
             refresh_storage = 1
             keys = list(transformer.values_dict)
@@ -1205,7 +1228,7 @@ def get_input_read(user_input, matrices_dict):
         input_latexed = transformer.original_user_input
         refresh_storage = 0
 
-    return input_processed, input_latexed, refresh_storage
+    return input_processed, input_latexed, refresh_storage, saveable, output_value
 
 
 def wrap_with_tag(text, tag, dom_elt_id=None, dom_elt_class=None):
@@ -1301,3 +1324,7 @@ if __name__ == '__main__':
 # (4-2)^(5-2)
 # 2^(3^2)
 # 2^3^2
+
+# todo:
+#  1. k - output should not be empty
+#  2. ko - output should not be None

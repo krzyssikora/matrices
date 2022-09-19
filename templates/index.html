@@ -59,6 +59,25 @@
             </div>
         </form>
     </div>
+    <!-- Modal for name of matrix to be saved from outcome -->
+    <div id="new_matrix_name" class="modal">
+        <span onclick="document.getElementById('new_matrix_name').style.display='none'"
+        class="close" title="Close Modal">&times;</span>
+
+        <!-- Modal Content -->
+        <form class="modal-content animate" action="index.html" method="post" id="matrix-data-form">
+            <div class="pop-up-form-container" id="matrix-name-info">
+                <div id="matrix-only-name-div"></div>
+            </div>
+            <div class="pop-up-form-container" id="matrix-name-rest">
+                <button class="pop-up-form-button" type="button" id="new-matrix-name-confirm-button">confirm</button>
+                <div id="pop-up-form-cancelbtn-container">
+                    <button class="pop-up-form-button" type="button"
+                    onclick="document.getElementById('new_matrix_name').style.display='none'" class="cancelbtn">cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 {% include 'help_modal.html' %}
     

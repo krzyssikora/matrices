@@ -1,6 +1,6 @@
 from matrices import app
 from matrices import database, utils, algebra, config
-# from matrices.config import _logger
+from matrices.config import _logger
 from flask import render_template, request, jsonify, Markup  # , redirect, url_for
 import git
 
@@ -28,12 +28,11 @@ def index():
     )
 
 
-@app.route('/delete_matrix/<int:idx>', methods=['POST'])
-def get_matrix_to_delete(idx):
+@app.route('/delete_matrix/<string:matrix_name_to_delete>', methods=['POST'])
+def get_matrix_to_delete(matrix_name_to_delete):
+    database.delete_matrix(matrix_name_to_delete)
     matrices_dict = database.import_from_database()
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
-    matrix_name_to_delete = matrices_list.pop(idx)[0]
-    database.delete_matrix(matrix_name_to_delete)
 
     return render_template(
         'index.html',
@@ -49,6 +48,7 @@ def get_matrix_data_to_create(matrix):
     matrix = eval(matrix)
     values = algebra.get_fractions_from_list_of_strings(matrix['values'])
     name, rows, columns = matrix['name'], matrix['rows'], matrix['columns']
+    _logger.debug(f'matrix to create. name: {name}, rows: {rows}, columns: {columns}, values: {values}')
     if values and name and rows and columns:
         name, rows, columns = name.upper(), int(rows), int(columns)
         new_matrix = algebra.Matrix(rows, columns, values)
@@ -106,8 +106,8 @@ def get_and_process_user_input():
                 'refresh_storage': 0,
             })
 
-    input_processed, input_latexed, refresh_storage = utils.get_input_read(user_input, matrices_dict)
-    # input_latexed = utils.mathjax_wrap(utils.change_to_latex(user_input))
+    input_processed, input_latexed, refresh_storage, saveable, output_value = \
+        utils.get_input_read(user_input, matrices_dict)
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
     return jsonify({
         'message_type': 3,
@@ -115,6 +115,8 @@ def get_and_process_user_input():
         'input_processed': input_processed,
         'input_latexed': input_latexed,
         'refresh_storage': refresh_storage,
+        'saveable': saveable,
+        'output_value': output_value,
     })
 
 
