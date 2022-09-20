@@ -101,11 +101,11 @@ body {
 }
 
 #algebra-header {
-  width: calc(var(--left-width) - 25px);
+  width: calc(var(--left-width) - 20px);
 }
 
 #storage-header {
-  width: calc(var(--right-width) - 25px);
+  width: calc(var(--right-width) - 20px);
 }
 
 .section-content {

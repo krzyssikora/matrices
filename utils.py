@@ -286,6 +286,7 @@ class StringTransformer:
                 return
             if string_in_progress[caret_index + 1] == 'T':
                 objects_dict[caret_index + 1] = 'transpose'
+                latex_dict[caret_index + 1] = 'T'
 
         self.correct_so_far = string_correct
         self.input_string = string_in_progress
@@ -315,12 +316,18 @@ class StringTransformer:
                     self.output_message = message
                     self.latex_dict = {0: self.input_string}
                     self.correct_so_far = False
-                else:
+                elif potential_matrix_name not in self.matrices_dict:
                     self.potential_matrix_name = potential_matrix_name
                     self.refresh_storage = True
                     self.input_string = self.original_user_input[equal_sign_index + 1:]
                     self.latex_dict[-1] = potential_matrix_name + '='
                     self.simplify_input_string()
+                    return
+                else:
+                    self.correct_so_far = False
+                    self.output_message = 'The name is already in use. Delete the existing matrix first.'
+                    self.input_latex = self.original_user_input
+                    self.processed = True
                     return
             # now self.potential_matrix_name != None means that the outcome is to be stored
             _logger.debug('simplify_input_string, AFTER ===')
@@ -570,6 +577,7 @@ class StringTransformer:
             if exponent_value == 'transpose' and isinstance(base_value, algebra.Matrix):
                 # 1. base: matrix,   exponent: transpose
                 new_value = base_value.transpose()
+                self.input_string = self.input_string[:exponent_idx] + '_' + self.input_string[exponent_idx + 1:]
             elif isinstance(exponent_value, tuple) and exponent_value[1] == 1:
                 if isinstance(base_value, algebra.Matrix):
                     # 2. base: integer,  exponent: integer
@@ -831,9 +839,12 @@ class StringTransformer:
                    'AFTER SPLIT 1 read_range: {}, input_iteration: {}'.format(read_range, input_iteration))
 
         # there should be exactly one key of values_dict in the read_range or at 0
+        # and NO chars to take care of in the range
         if self.correct_so_far:
             _logger.debug(f'>>> read_range: {read_range}, values_dicts.keys: {self.values_dict.keys()}')
-            self.correct_so_far = self.there_is_exactly_one_value_in_range(read_range)
+            self.correct_so_far = \
+                self.there_is_exactly_one_value_in_range(read_range) and \
+                self.no_more_chars_to_process_in_string(read_range)
 
         if input_iteration == 0:
             if self.correct_so_far:
@@ -1210,7 +1221,7 @@ def get_input_read(user_input, matrices_dict):
                                         )
         transformer.debug(inspect.stack(), 'BEFORE read_input')
         if transformer.processed:
-            return transformer.output_message, \
+            return mathjax_text_wrap(transformer.output_message), \
                    transformer.input_latex, \
                    transformer.refresh_storage, False, None
 
@@ -1360,5 +1371,5 @@ if __name__ == '__main__':
 # 2^3^2
 
 # todo:
-#  1. k - output should not be empty
-#  2. ko - output should not be None
+#  1. mathematics is loading should appear after input / new matrix
+#  2. storage does not load on pythonanywhere
