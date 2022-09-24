@@ -1373,3 +1373,4 @@ if __name__ == '__main__':
 # todo:
 #  1. mathematics is loading should appear after input / new matrix
 #  2. storage does not load on pythonanywhere
+#  4. aug(aug(a,a),aug(a,a)) does not work

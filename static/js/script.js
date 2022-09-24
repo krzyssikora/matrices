@@ -52,18 +52,43 @@ var output_value;
     //     return ret_object;
     // };
 
-    function updateStorage() {
-        setTimeout(() => {
-            $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content>*","" );
-            setTimeout(() => {
-                MathJax.typesetPromise();
-                ScrollToBottom(document.getElementById('storage'));
-                focusOnInput();
-                addStorageListeners();
-            }, 100);
-        }, 100);
-    };
+    // function updateStorage() {
+    //     setTimeout(() => {
+    //         $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content>*","" );
+    //         setTimeout(() => {
+    //             MathJax.typesetPromise();
+    //             ScrollToBottom(document.getElementById('storage'));
+    //             focusOnInput();
+    //             addStorageListeners();
+    //         }, 100);
+    //     }, 100);
+    // };
     // TODO the timeouts above must be changed
+    function updateStorage() {
+        window.loaded = 0;
+        checkLoaded();
+        updateStorage1(updateStorage2);
+        setTimeout( function(){
+            ScrollToBottom(document.getElementById('storage'));
+            focusOnInput();
+            addStorageListeners();
+          }, 500 );
+    };
+
+    function updateStorage1(callback) {
+        $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content>*","" );
+        setTimeout( function(){
+            callback();
+          }, 500 );
+    };
+    function updateStorage2() {
+        MathJax.typeset();
+        updateStorage3();
+    };
+
+    function updateStorage3() {
+        window.loaded = 1;
+    };
 
     function focusOnInput() {
         const input = document.getElementById('user-input');
@@ -73,15 +98,14 @@ var output_value;
         input.focus();
     };
 
-    // info that mathJax is loading
-    var pop_up = document.getElementById('pop-up-universal');
-    pop_up.style.display = 'block';
-
-    var modal_content = document.getElementById('modal_div');
-    var i = 0
-
     function checkLoaded() {
+        // info that mathJax is loading
+        var pop_up = document.getElementById('pop-up-universal');
+        var modal_content = document.getElementById('modal_div');
+
         if(window.loaded === 0) {
+            pop_up.style.display = 'block';
+            var i = 0
             for (let j=0; j<5; j++) {
                 let clone = document.createElement('span');
                 clone.innerHTML = 'mathematics is loading... ';
@@ -97,20 +121,15 @@ var output_value;
             setTimeout(() => {
                 modal_content.innerHTML = '';
                 pop_up.style.display = 'none';
+                ScrollToBottom(document.getElementById('storage'));
                 focusOnInput();
-            }, 1)  // later change to 1000???
+            }, 1)  
         };
     }
     checkLoaded();
 
-    // function sendUserInput(user_input) {
-	// 	var request = new XMLHttpRequest();
-	// 	request.open('POST', `/get_user_input/${user_input}`);
-	// 	request.send();
-	// };
-
     function ScrollToBottom(element) {
-        element.scrollTop = element.scrollHeight - element.offsetHeight;
+        element.scrollTop = element.scrollHeight - element.offsetHeight + 100;
     };
 
     var algebra_box = document.getElementById('algebra');
@@ -496,10 +515,12 @@ var output_value;
             var columns = output_value['columns'];
             var values = output_value['values'];
             var matrix = {'name': name, 'rows': rows, 'columns': columns, 'values': values};
-            algebra_content = $("#algebra div.section-content").html();
+            // algebra_content = $("#algebra div.section-content").html();
             sendMatrixDataToCreate(matrix);
-            updateStorage();
-            addStorageListeners();
+            setTimeout(() => {
+                updateStorage();
+                addStorageListeners();
+            }, 500);
         } else {
             var info = document.getElementById('matrix-name-error-info');
             info.style.display = 'block';
