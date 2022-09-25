@@ -377,10 +377,23 @@ class StringTransformer:
             return
         pos = starting_position - 1
         while True:
-            pos = self.input_string[:ending_position].find(',', pos + 1)
-            if pos == -1:
-                self.correct_so_far = False
-                return
+            # find position of a comma that is not within any pair of brackets that are within the read_range
+            brackets_within_range = \
+                [bracket for bracket in self.brackets if bracket[0] >= read_range[0] and bracket[1] < read_range[1]]
+            while True:
+                pos = self.input_string[:ending_position].find(',', pos + 1)
+                if pos == -1:
+                    self.correct_so_far = False
+                    return
+                bracket = find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples=brackets_within_range,
+                                                                            search_value=pos,
+                                                                            which_coordinate=0,
+                                                                            # idx_from=starting_position,
+                                                                            # idx_to=ending_position
+                                                                            )
+                if bracket is None or bracket[1] < pos:
+                    break
+
             self.latex_dict[pos] = ','
             # head is the part before the chosen comma
             _logger.debug(f'...reading input from {inspect.stack()[0][3]}')
@@ -466,9 +479,7 @@ class StringTransformer:
                         list_prefixes = ["RREF(", "REF(", "DET("]
                         list_functions = [function_input.rref(), function_input.ref(), function_input.det()]
                         m_result = list_functions[list_prefixes.index(prefix)]
-                # places a tmp matrix or tmp fraction name in string_in_process
-                # create temporary matrix / fraction
-                # m_index = len(tmp_matrices)
+
                 if m_result is None:
                     self._set_attributes_when_input_incorrect(prefix)
                     return
@@ -483,7 +494,9 @@ class StringTransformer:
                     if idx in self.latex_dict:
                         self.latex_dict.pop(idx)
                 # clean prefix in input_string
-                self.input_string = self.input_string.replace(prefix[:-1], '_' * (len(prefix) - 1))
+                self.input_string = \
+                    self.input_string[:ending_position].replace(prefix[:-1], '_' * (len(prefix) - 1)) + \
+                    self.input_string[ending_position:]
                 # clean a comma in input_string
                 self.input_string = \
                     self.input_string[:pos1] + \
@@ -548,17 +561,20 @@ class StringTransformer:
 
             self.latex_dict[caret_index] = '^{'
             indexes = list(self.values_dict)
+            indexes.sort()
             indexes_before = [idx for idx in indexes if idx < caret_index]
             indexes_after = [idx for idx in indexes if idx > caret_index]
 
             if indexes_before and indexes_after:
                 base_idx = max(indexes_before)
                 exponent_idx = min(indexes_after)
+                latex_base_idx = indexes_before[-2] if len(indexes_before) > 1 else 0
+                latex_exponent_idx = indexes_after[1] if len(indexes_after) > 1 else len(self.input_string)
             else:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[base_idx] = '{' + self.latex_dict.get(base_idx, '')
-            self.latex_dict[exponent_idx] = self.latex_dict.get(exponent_idx, '') + '}}'
+            self.latex_dict[latex_base_idx] = '{' + self.latex_dict.get(latex_base_idx, '')
+            self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}}'
 
             base_value = self.values_dict[base_idx]
             exponent_value = self.values_dict[exponent_idx]
@@ -761,7 +777,7 @@ class StringTransformer:
         keys_in_range = [key for key in keys if start <= key < end]
         if len(keys_in_range) == 1:
             return True
-        elif len(keys) == 1 and 0 in keys:
+        elif len(keys_in_range) == 1 and 0 in keys:
             return True
         else:
             _logger.error('inappropriate values in the dict: {}'.format(self.values_dict))
@@ -931,6 +947,12 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
         idx_from = 0
     if idx_to is None:
         idx_to = len(list_of_tuples) - 1
+    else:
+        idx_to -= 1
+    print('range is from: {} to {}'.format(idx_from, idx_to))
+
+    if idx_to < idx_from:
+        return None
 
     if idx_from == idx_to or idx_to - idx_from == 1:
         if list_of_tuples[idx_from][which_coordinate] == search_value:
@@ -949,13 +971,70 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
                                                           search_value,
                                                           which_coordinate,
                                                           idx_mid,
-                                                          idx_to)
+                                                          idx_to + 1)
     elif pivot > search_value:
         return find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples,
                                                           search_value,
                                                           which_coordinate,
                                                           idx_from,
-                                                          idx_mid)
+                                                          idx_mid + 1)
+
+
+def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
+                                                     idx_to=None):
+    """
+    binary search of a tuple whose certain coordinate is less than search_value
+    Args:
+        list_of_tuples:
+        search_value:
+        which_coordinate:
+        idx_from:
+        idx_to:
+    Returns:
+        The tuple with which_coordinate largest but less than search_value
+        or None if there is no such tuple.
+    """
+    list_of_tuples.sort()
+    if idx_from is None:
+        idx_from = 0
+    if idx_to is None:
+        idx_to = len(list_of_tuples) - 1
+    else:
+        idx_to -= 1
+    # print('range is from: {} to {}'.format(idx_from, idx_to))
+
+    if idx_to < idx_from:
+        return None
+
+    if idx_from == idx_to or idx_to - idx_from == 1:
+        if list_of_tuples[idx_from][which_coordinate] < search_value:
+            return list_of_tuples[idx_from]
+        elif list_of_tuples[idx_to][which_coordinate] < search_value:
+            return list_of_tuples[idx_to]
+        else:
+            return None
+
+    idx_mid = (idx_from + idx_to) // 2
+    try:
+        pivot = list_of_tuples[idx_mid][which_coordinate]
+        if pivot < search_value:
+            return find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples,
+                                                                     search_value,
+                                                                     which_coordinate,
+                                                                     idx_mid,
+                                                                     idx_to + 1)
+        elif pivot >= search_value:
+            return find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples,
+                                                                     search_value,
+                                                                     which_coordinate,
+                                                                     idx_from,
+                                                                     idx_mid + 1)
+    except Exception as e:
+        _logger.error('*' * 20 + ' ERROR ' + '*' * 20)
+        _logger.error('list_of_tuples: {}, search_value: {}, which_coordinate: {}, idx_from: {}, idx_to: {}'.format(
+            list_of_tuples, search_value, which_coordinate, idx_from, idx_to))
+        _logger.error('idx_mid: {}'.format(idx_mid))
+        raise
 
 
 def remove_redundant_brackets(input_string, brackets):
@@ -1270,7 +1349,7 @@ def get_input_read(user_input, matrices_dict):
         refresh_storage = False
         saveable = False
         output_value = None
-        _logger.error('en error occurred. {}'.format(e))
+        _logger.error('an error occurred. {}'.format(e))
         raise
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
@@ -1351,12 +1430,21 @@ def debug_intro(inspect_stack):
 
 
 if __name__ == '__main__':
+    st = '(((aaa)aa(aa(aaa))aa)aaaaa(aaa))aa(aa)'
+    br, bro, brc = get_pairs_of_brackets_from_string(st)
+    print(br)
+    for i in range(len(st)):
+        t = find_tuple_before_in_list_of_tuples_by_coordinate(br, i)
+        correct = (t is not None and t[0] < i)
+        info_st = '{}: {}, {}'.format(i, t, correct)
+        print(info_st)
+        # print((' ' * 30 + info_st) if t else info_st)
     pass
 
 # TESTS:
 # a
 # b*a, a*b (one not possible)
-# 2a-a-a
+# 2*a-a-a
 # a^2-a*a
 # aug(aug(a,a),a)
 # aug(a,aug(a,a))
@@ -1372,5 +1460,4 @@ if __name__ == '__main__':
 
 # todo:
 #  1. mathematics is loading should appear after input / new matrix
-#  2. storage does not load on pythonanywhere
-#  4. aug(aug(a,a),aug(a,a)) does not work
+#  2. 2^(3^2) show incorrect latexed input for the exponent (but e.g. 2^(5-2) is fine)

@@ -102,8 +102,8 @@ help_commands = [['CLS', [['cls', 'Clears the screen and prints again the names 
                                      'the determinant is non-zero.']]],
                  ['T', [['M^T', 'Finds the transpose of a matrix, i.e. switches rows to columns.']]],
                  ['AUG', [['aug(M, N)', 'Augments a matrix M with N, if their numbers of rows are equal.']]],
-                 ['SUB', [['sub(M, r, c)', 'Finds a sub-matrix of a given matrix with rows from 1 to r and columns</br>'
-                                           'from 1 to c (inclusive).'],
+                 ['SUB', [['sub(M, r, c)', 'Finds a sub-matrix of a given matrix with rows from 1 to r</br> '
+                                           'and columns from 1 to c (inclusive).'],
                           ['sub(M, r0, r1, c0, c1)',
                            'OR finds a sub-matrix of a given matrix with rows from r0 to r1</br>'
                            'and columns from c0 to c1 (inclusive).']]],
