@@ -295,9 +295,10 @@ class StringTransformer:
         return
 
     def simplify_input_string(self):
-        restricted_char_found, message = restricted_chars_used(self.input_string)
+        restricted_char_found, message, escaped_string = restricted_chars_used(self.input_string)
         if restricted_char_found:
             self.output_message = message
+            self.input_string = escaped_string
             self.correct_so_far = False
             return
 
@@ -559,7 +560,6 @@ class StringTransformer:
             if caret_index in {0, len(self.input_string) - 1}:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[caret_index] = '^{'
             indexes = list(self.values_dict)
             indexes.sort()
             indexes_before = [idx for idx in indexes if idx < caret_index]
@@ -568,13 +568,18 @@ class StringTransformer:
             if indexes_before and indexes_after:
                 base_idx = max(indexes_before)
                 exponent_idx = min(indexes_after)
-                latex_base_idx = indexes_before[-2] if len(indexes_before) > 1 else 0
-                latex_exponent_idx = indexes_after[1] if len(indexes_after) > 1 else len(self.input_string)
+                latex_exponent_idx = indexes_after[1] if len(indexes_after) > 1 else len(self.input_string) - 1
             else:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[latex_base_idx] = '{' + self.latex_dict.get(latex_base_idx, '')
-            self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}}'
+            exponent = self.values_dict[exponent_idx]
+            if isinstance(exponent, str) and not exponent.startswith('('):  # or not isinstance(exponent, str):
+                self.latex_dict[caret_index] = '^{'
+                self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}'
+                _logger.debug(f'...adding opening curly after caret at position {caret_index}')
+                _logger.debug(f'...adding closing curly brace after position {latex_exponent_idx}')
+            else:
+                self.latex_dict[caret_index] = '^'
 
             base_value = self.values_dict[base_idx]
             exponent_value = self.values_dict[exponent_idx]
@@ -1212,16 +1217,22 @@ def get_string_from_dict(dict_to_convert):
 
 def get_latex_from_dict(dict_to_convert):
     before, after = '{', '}'
-    keys = list(dict_to_convert.keys())
-    keys.sort()
-    chars_not_to_be_surrounded = ['{', '}', '^']
+    keys = list(dict_to_convert)
+    keys.sort(reverse=True)
+    chars_not_to_be_surrounded = ['{', '}', '^', '+', '-', '*', '/']
+    # chars_in_strings_not_to_be_surrounded = ['^']  # ['^', '+', '-', '*', '/']
     return_string = ''
     for key in keys:
         latex_string = dict_to_convert[key]
         if latex_string:
-            return_string += \
-                latex_string if any(char in latex_string for char in chars_not_to_be_surrounded) \
-                else f'{before}{latex_string}{after}'
+            return_string = \
+                (latex_string + return_string) \
+                if any(latex_string.startswith(char) for char in chars_not_to_be_surrounded) \
+                else (f'{before}{latex_string}{after}' + return_string)
+        # if not any(return_string.startswith(char) for char in chars_in_strings_not_to_be_surrounded) \
+        #         and not any(char in return_string for char in {'(', ')'}):
+        #     return_string = f'{before}{return_string}{after}'
+        _logger.debug('key: {}, latex_string: {}, return_string: {}'.format(key, latex_string.rjust(5), return_string))
     return return_string
 
 
@@ -1234,13 +1245,29 @@ def restricted_chars_used(input_string):
         restricted_char_used (bool),
         info message (str) - if True
     """
-    for letter in input_string:
+    restricted_char = False
+    restricted_chars_in_string = list()
+    restricted_chars_escaped = list()
+    for idx, letter in enumerate(input_string):
         if letter in {"=", "+", "-", "/", "*", "(", ")", "^", ".", ","} \
                 or (ord("A") <= ord(letter) <= ord("Z")) or letter.isdigit():
             continue
         else:
-            return True, f'Your input contains restricted character "{letter}".'
-    return False, ''
+            restricted_char = True
+            restricted_chars_in_string.append(letter)
+            if letter in {'_'}:
+                letter = '\\' + letter
+            restricted_chars_escaped.append(letter)
+    if restricted_char:
+        insert_str = \
+            f' "{restricted_chars_escaped[0]}"' if len(restricted_chars_escaped) == 1 \
+            else 's \"{}\"'.format("\", \"".join(restricted_chars_escaped))
+        return_string = f'Your input contains restricted character{insert_str}.'
+        for letter, letter_escaped in zip(restricted_chars_in_string, restricted_chars_escaped):
+            input_string = input_string.replace(letter, letter_escaped)
+    else:
+        return_string = ''
+    return restricted_char, return_string, input_string
 
 
 def correct_matrix_name(matrix_name_as_string):
@@ -1350,7 +1377,6 @@ def get_input_read(user_input, matrices_dict):
         saveable = False
         output_value = None
         _logger.error('an error occurred. {}'.format(e))
-        raise
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
 
