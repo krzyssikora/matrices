@@ -4,6 +4,7 @@ from matrices.config import _logger
 import re
 import inspect
 import os
+import copy
 
 
 class StringTransformer:
@@ -30,15 +31,11 @@ class StringTransformer:
 
         self.simplify_input_string()
 
-    def __str__(self):
-        ret_string = '\n' + '-' * 50 + '\n'
-        for i in range(len(self.original_user_input)):
-            ret_string += str(i).rjust(3)
-        ret_string += '\n'
-        for elt in list(self.original_user_input):
-            ret_string += elt.rjust(3)
-        ret_string += '\n'
-        for name, value in [
+        self.past_versions = list()
+        self.debug_fields = list()
+
+    def all_debug_fields(self):
+        return [
             # ('self.original_user_input', self.original_user_input),
             ('self.input_string', self.input_string),
             # ('self.matrices_dict', self.matrices_dict),
@@ -53,7 +50,17 @@ class StringTransformer:
             ('self.correct_so_far', self.correct_so_far),
             ('self.refresh_storage', self.refresh_storage),
             ('self.potential_matrix_name', self.potential_matrix_name)
-        ]:
+        ]
+
+    def __str__(self):
+        ret_string = '\n' + '-' * 50 + '\n'
+        for ch in range(len(self.original_user_input)):
+            ret_string += str(ch).rjust(3)
+        ret_string += '\n'
+        for elt in list(self.original_user_input):
+            ret_string += elt.rjust(3)
+        ret_string += '\n'
+        for name, value in self.debug_fields:
             if value is not None:  # != '0128409174501':
                 if isinstance(value, dict):
                     keys = list(value)
@@ -66,12 +73,44 @@ class StringTransformer:
                     ret_string += f'{name.ljust(26)}: {value}\n'
         return ret_string
 
-    def debug(self, stack, intro_statement=None):
-        _logger.debug('')
-        if intro_statement:
-            _logger.debug(intro_statement)
+    def _get_indexes_before_and_after_from_values_and_latex(self, caret_index):
+        end = len(self.input_string)
+        indexes_from_values = list(self.values_dict)
+        indexes_from_values.sort()
+        indexes_from_values_before = [idx for idx in indexes_from_values if idx < caret_index]
+        indexes_from_values_after = [idx for idx in indexes_from_values if idx > caret_index]
+        values_base_idx = indexes_from_values_before[-1] if indexes_from_values_before else 0
+        values_exponent_idx = indexes_from_values_after[0] if indexes_from_values_after else end
+
+        before_values_base_idx = indexes_from_values_before[-2] if len(indexes_from_values_before) > 1 else 0
+        after_values_exponent_idx = indexes_from_values_after[1] if len(indexes_from_values_after) > 1 else end
+
+        indexes_from_latex = list(self.latex_dict)
+        indexes_from_latex.sort()
+        indexes_from_latex_before = [idx for idx in indexes_from_latex if idx < caret_index]
+        indexes_from_latex_before = [idx for idx in indexes_from_latex if idx > caret_index]
+        latex_base_idx = 0
+        latex_exponent_idx = len(self.input_string)
+
+        return values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx
+
+    def debug(self, stack, intro_statement=''):
         debug_intro(stack)
-        _logger.debug(self)
+        new_state = copy.deepcopy(self)
+        new_state.past_versions = None
+        new_state.debug_fields = None
+        self.debug_fields = list()
+        self.past_versions.append(new_state)
+        if len(self.past_versions) <= 1:
+            self.debug_fields = copy.deepcopy(self.all_debug_fields())
+        else:
+            old_state = self.past_versions[-2]
+            for old, new in zip(old_state.all_debug_fields(), new_state.all_debug_fields()):
+                if old[1] != new[1]:
+                    self.debug_fields.append(new)
+        _logger.debug(intro_statement + f'... {len(self.debug_fields)} changes from previous state')
+        if self.debug_fields:
+            _logger.debug(self)
 
     def get_signs_tidied_up(self):
         """
@@ -518,6 +557,9 @@ class StringTransformer:
         for opening_index, closing_index in mutually_exclusive_brackets:
             self.latex_dict[opening_index] = '{('
             self.latex_dict[closing_index] = ')}'
+            self.brackets.remove((opening_index, closing_index))
+            self.input_string = self.input_string[:opening_index] + '_' + self.input_string[opening_index + 1:]
+            self.input_string = self.input_string[:closing_index] + '_' + self.input_string[closing_index + 1:]
             _logger.debug(f'...reading input from {inspect.stack()[0][3]}, '
                           f'read_range: {(opening_index + 1, closing_index)}, '
                           f'input_iteration: {input_iteration}')
@@ -535,11 +577,6 @@ class StringTransformer:
                 self.values_dict[0] = outcome
                 if 1 in self.values_dict:
                     self.values_dict.pop(1)
-            # else:
-            #     self.values_dict[opening_index] = self.values_dict[opening_index + 1]
-            # for idx in {opening_index + 1, closing_index + 1}:
-            #     if idx in self.values_dict:
-            #         self.values_dict.pop(idx)
 
     def clean_powers(self, read_range):
         """
@@ -551,46 +588,40 @@ class StringTransformer:
             self.correct_so_far = False
             self.output_message = message if message else 'A power cannot be evaluated.'
 
-        _logger.debug(f'clean_powers, read_range: {read_range}')
         starting_position, ending_position = read_range
+
+        _logger.debug(f'clean_powers, read_range: {read_range}')
         caret_indexes = [idx for idx, char in enumerate(self.input_string) if char == '^'
                          and idx in range(starting_position, ending_position)]
         caret_indexes.sort(reverse=True)
         for caret_index in caret_indexes:
+            if self.input_string[starting_position: ending_position].count('^') > 0:
+                self.debug(inspect.stack(), 'inside powers, read_range: {}'.format(read_range))
             if caret_index in {0, len(self.input_string) - 1}:
                 return set_attributes_when_incorrect()
 
-            indexes = list(self.values_dict)
-            indexes.sort()
-            indexes_before = [idx for idx in indexes if idx < caret_index]
-            indexes_after = [idx for idx in indexes if idx > caret_index]
-
-            if indexes_before and indexes_after:
-                base_idx = max(indexes_before)
-                exponent_idx = min(indexes_after)
-                latex_exponent_idx = indexes_after[1] if len(indexes_after) > 1 else len(self.input_string) - 1
+            indexes = self._get_indexes_before_and_after_from_values_and_latex(caret_index)
+            if indexes:
+                values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx = indexes
             else:
                 return set_attributes_when_incorrect()
 
-            exponent = self.values_dict[exponent_idx]
-            if isinstance(exponent, str) and not exponent.startswith('('):  # or not isinstance(exponent, str):
-                self.latex_dict[caret_index] = '^{'
-                self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}'
-                _logger.debug(f'...adding opening curly after caret at position {caret_index}')
-                _logger.debug(f'...adding closing curly brace after position {latex_exponent_idx}')
-            else:
-                self.latex_dict[caret_index] = '^'
+            exponent_value = self.values_dict[values_exponent_idx]
+            base_value = self.values_dict[values_base_idx]
 
-            base_value = self.values_dict[base_idx]
-            exponent_value = self.values_dict[exponent_idx]
+            self.latex_dict[latex_base_idx] = '{{' + self.latex_dict.get(latex_base_idx, '')
+            self.latex_dict[caret_index] = '}^{'
+            self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}}'
+
 
             # case: ...^-integer
-            if exponent_idx == caret_index + 2 and self.input_string[caret_index + 1] == '-':
+            if values_exponent_idx == caret_index + 2 and self.input_string[caret_index + 1] == '-':
                 if isinstance(exponent_value, tuple):
                     exponent_value = (-exponent_value[0], exponent_value[1])
-                    self.values_dict[exponent_idx] = exponent_value
+                    self.values_dict[values_exponent_idx] = exponent_value
                 else:
                     return set_attributes_when_incorrect()
+
             # acceptable cases:
             # 1. base: matrix,   exponent: transpose
             # 2. base: matrix,   exponent: integer
@@ -598,7 +629,8 @@ class StringTransformer:
             if exponent_value == 'transpose' and isinstance(base_value, algebra.Matrix):
                 # 1. base: matrix,   exponent: transpose
                 new_value = base_value.transpose()
-                self.input_string = self.input_string[:exponent_idx] + '_' + self.input_string[exponent_idx + 1:]
+                self.input_string = \
+                    self.input_string[:values_exponent_idx] + '_' + self.input_string[values_exponent_idx + 1:]
             elif isinstance(exponent_value, tuple) and exponent_value[1] == 1:
                 if isinstance(base_value, algebra.Matrix):
                     # 2. base: integer,  exponent: integer
@@ -616,10 +648,10 @@ class StringTransformer:
             if new_value is None:
                 return set_attributes_when_incorrect()
             # introduce new value into values_dict
-            for idx in range(base_idx, exponent_idx + 1):
+            for idx in range(values_base_idx, values_exponent_idx + 1):
                 if idx in self.values_dict:
                     self.values_dict.pop(idx)
-            self.values_dict[base_idx] = new_value
+            self.values_dict[values_base_idx] = new_value
             self.input_string = self.input_string[:caret_index] + '_' + self.input_string[caret_index + 1:]
 
     def split_input_by_operations(self, operations, read_range, input_iteration):
@@ -667,7 +699,7 @@ class StringTransformer:
                     continue
                 last_operation_position = pos
                 operation = op
-            _logger.debug('last_operation_position before starting split: {}'.format(last_operation_position))
+        _logger.debug('last_operation_position before starting split: {}'.format(last_operation_position))
         if initial_position < last_operation_position < final_position - 1:  # divide into smaller pieces
             self.input_string = \
                 self.input_string[:last_operation_position] + '_' + self.input_string[last_operation_position + 1:]
@@ -781,8 +813,6 @@ class StringTransformer:
         start, end = read_range
         keys_in_range = [key for key in keys if start <= key < end]
         if len(keys_in_range) == 1:
-            return True
-        elif len(keys_in_range) == 1 and 0 in keys:
             return True
         else:
             _logger.error('inappropriate values in the dict: {}'.format(self.values_dict))
@@ -931,6 +961,14 @@ def get_ids_before_and_after_in_dict(the_dict, idx):
         i += 1
 
     return left_idx, right_idx
+
+
+def find_next(lst, elt):
+    pass
+
+
+def find_previous(lst, elt):
+    pass
 
 
 def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
@@ -1219,7 +1257,7 @@ def get_latex_from_dict(dict_to_convert):
     before, after = '{', '}'
     keys = list(dict_to_convert)
     keys.sort(reverse=True)
-    chars_not_to_be_surrounded = ['{', '}', '^', '+', '-', '*', '/']
+    chars_not_to_be_surrounded = ['{', '}', '(', ')', '^', '+', '-', '*', '/']
     # chars_in_strings_not_to_be_surrounded = ['^']  # ['^', '+', '-', '*', '/']
     return_string = ''
     for key in keys:
@@ -1483,7 +1521,10 @@ if __name__ == '__main__':
 # (4-2)^(5-2)
 # 2^(3^2)
 # 2^3^2
+# 2^(3-2)+(4-2)^3-(3-1)^(5-3)
 
 # todo:
+#  2. complete _get_indexes_before_and_after_from_values_and_latex
+
 #  1. mathematics is loading should appear after input / new matrix
 #  2. 2^(3^2) show incorrect latexed input for the exponent (but e.g. 2^(5-2) is fine)
