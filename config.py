@@ -1,5 +1,3 @@
-import logging
-
 DATABASE = "matrices/database/matrices_rational.sqlite"
 # DATABASE = "matrices/database/matrices_rational_tmp.sqlite"
 # DATABASE = "c:/Users/krzys/Documents/Python/lekcje/matrices/matrices/database/matrices_rational_tmp.sqlite"
@@ -122,18 +120,3 @@ help_commands = [['CLS', [['cls', 'Clears the screen and prints again the names 
                                         'by commas and they should be identical to those listed.']]],
                  ['out', [['out', 'Ends the application.']]]]
 
-# logging.basicConfig(filename='my_music_{}.log'.format(datetime.strftime(datetime.now(),
-#                                                                         '%Y_%m_%d')),
-#                     level=logging.DEBUG)
-# create logger
-_logger = logging.getLogger(__name__)
-_logger.setLevel(logging.ERROR)
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-# create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# add formatter to ch
-ch.setFormatter(formatter)
-# add ch to logger
-_logger.addHandler(ch)

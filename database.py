@@ -1,7 +1,6 @@
 import sqlite3
 from matrices.algebra import Matrix
 from matrices import config
-# from matrices.config import _logger
 
 
 def import_from_database():

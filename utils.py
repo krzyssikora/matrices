@@ -1,10 +1,11 @@
-# from matrices.algebra import Matrix
 from matrices import database, algebra, config
-from matrices.config import _logger
+import logging
 import re
 import inspect
 import os
 import copy
+
+_logger = logging.getLogger('log.utils')
 
 
 class StringTransformer:
@@ -37,14 +38,10 @@ class StringTransformer:
 
     def all_debug_fields(self):
         return [
-            # ('self.original_user_input', self.original_user_input),
             ('self.input_string', self.input_string),
-            # ('self.matrices_dict', self.matrices_dict),
             ('self.values_dict', self.values_dict),
             ('self.latex_dict', self.latex_dict),
             ('self.brackets', self.brackets),
-            # ('self.brackets_opening', self.brackets_opening),
-            # ('self.brackets_closing', self.brackets_closing),
             ('self.output_message', self.output_message),
             ('self.output_value', self.output_value),
             ('self.input_latex', self.input_latex),
@@ -1505,7 +1502,7 @@ def debug_intro(inspect_stack):
 if __name__ == '__main__':
     pass
 
-# TESTS:
+# FOR TESTS:
 # a
 # b*a, a*b (one not possible)
 # 2*a-a-a
@@ -1522,9 +1519,7 @@ if __name__ == '__main__':
 # 2^(3^2)
 # 2^3^2
 # 2^(3-2)+(4-2)^3-(3-1)^(5-3)
+# 2^(3-2)+(4-2)^3-(3-1)^(5-3) + 2^3^2
 
 # todo:
-#  2. complete _get_indexes_before_and_after_from_values_and_latex
-
 #  1. mathematics is loading should appear after input / new matrix
-#  2. 2^(3^2) show incorrect latexed input for the exponent (but e.g. 2^(5-2) is fine)

@@ -1,8 +1,9 @@
 from matrices import app
 from matrices import database, utils, algebra, config
-from matrices.config import _logger
 from flask import render_template, request, jsonify, Markup  # , redirect, url_for
 import git
+import logging
+from datetime import datetime
 
 
 @app.route('/git_update', methods=['POST'])
@@ -141,3 +142,24 @@ def general_help():
     return render_template('help.html',
                            help_content=help_content,
                            )
+
+
+# create logger in 'views'
+_logger = logging.getLogger('log')
+_logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+dtnow = datetime.now()
+log_filename = f'{dtnow.year}-{str(dtnow.month).rjust(2, "0")}-{str(dtnow.day).rjust(2, "0")}_' \
+               f'{str(dtnow.hour).rjust(2, "0")}{str(dtnow.minute).rjust(2, "0")}_matrices.log'
+fh = logging.FileHandler('logs/' + log_filename)
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+_logger.addHandler(fh)
+_logger.addHandler(ch)
