@@ -11,14 +11,18 @@
   --scrollbar-width: 6px;
   /* colours */
   --colour-left: rgb(253, 248, 207);
+  --colour-left-formula: rgb(255, 236, 175);
+  --colour-left-border: rgb(145, 86, 9);
+  /* --colour-left: rgb(255, 210, 251);
+  --colour-left-formula: rgb(253, 183, 238);
+  --colour-left-border: rgb(255, 18, 184); */
   --colour-right: rgb(207, 237, 255);
   --colour-navbar-background: rgb(196, 255, 176);
   --colour-navbar-text: rgb(97, 94, 94);
   --colour-navbar-background-hover: rgb(255, 126, 94);
   --colour-navbar-text-hover: white;
-  --colour-left-formula: rgb(255, 236, 175);
-  --colour-left-border: rgb(145, 86, 9);
   --colour-section-header: rgba(255, 255, 255, 0.5);
+  --colour-transparent-gray: rgba(255, 255, 255, 0.5);
   --colour-scrollbar: rgb(255, 126, 94);
   --colour-scrollbar-background: var(--colour-navbar-background);
   --colour-scrollbar-hover: rgb(78, 78, 78);
@@ -218,7 +222,7 @@ span#clearfieldicon span:hover {
 
 #pop-up-form-info {
   padding: 10px;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--colour-transparent-gray);
 }
 
 .pop-up-form-button {
@@ -377,7 +381,7 @@ tr {
 }
 
 #matrix-name-div, #matrix-dimensions-div {
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--colour-transparent-gray);
   padding: 10px;
   display: none;
 }
@@ -385,7 +389,7 @@ tr {
 .input-error-info {
   padding: 10px;
   color: red;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: var(--colour-transparent-gray);
   display: none;
 }
 
