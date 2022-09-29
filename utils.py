@@ -16,6 +16,7 @@ class StringTransformer:
         self.values_dict = dict()
         self.latex_dict = dict()
 
+        self.initial_brackets = None
         self.brackets = None
         self.brackets_opening = None
         self.brackets_closing = None
@@ -29,10 +30,10 @@ class StringTransformer:
         self.potential_matrix_name = None
         self.processed = False
 
-        self.simplify_input_string()
-
         self.past_versions = list()
         self.debug_fields = list()
+
+        self.simplify_input_string()
 
     def all_debug_fields(self):
         return [
@@ -75,6 +76,8 @@ class StringTransformer:
 
     def _get_indexes_before_and_after_from_values_and_latex(self, caret_index):
         end = len(self.input_string)
+
+        # get indexes for values
         indexes_from_values = list(self.values_dict)
         indexes_from_values.sort()
         indexes_from_values_before = [idx for idx in indexes_from_values if idx < caret_index]
@@ -82,15 +85,28 @@ class StringTransformer:
         values_base_idx = indexes_from_values_before[-1] if indexes_from_values_before else 0
         values_exponent_idx = indexes_from_values_after[0] if indexes_from_values_after else end
 
-        before_values_base_idx = indexes_from_values_before[-2] if len(indexes_from_values_before) > 1 else 0
-        after_values_exponent_idx = indexes_from_values_after[1] if len(indexes_from_values_after) > 1 else end
-
         indexes_from_latex = list(self.latex_dict)
         indexes_from_latex.sort()
-        indexes_from_latex_before = [idx for idx in indexes_from_latex if idx < caret_index]
-        indexes_from_latex_before = [idx for idx in indexes_from_latex if idx > caret_index]
-        latex_base_idx = 0
-        latex_exponent_idx = len(self.input_string)
+        latex_keys_caret_index = indexes_from_latex.index(caret_index)
+        # get opening index for latex
+        latex_base_idx = indexes_from_latex[latex_keys_caret_index - 1]
+        brackets = find_tuple_in_list_of_tuples_by_coordinate(self.initial_brackets, latex_base_idx, 1)
+        if brackets:
+            latex_base_idx = brackets[0]
+        # get closing index for latex
+        latex_exponent_idx = indexes_from_latex[latex_keys_caret_index + 1]
+        while True:
+            brackets = find_tuple_in_list_of_tuples_by_coordinate(self.initial_brackets, latex_exponent_idx, 0)
+            if brackets is not None:
+                latex_exponent_idx = brackets[1]
+                # if latex_exponent_idx not in indexes_from_latex:
+                #     break
+            latex_keys_exponent_index = indexes_from_latex.index(latex_exponent_idx)
+            if latex_keys_exponent_index < len(indexes_from_latex) - 1 and \
+                    '^' in self.latex_dict.get(indexes_from_latex[latex_keys_exponent_index + 1], ''):
+                latex_exponent_idx = indexes_from_latex[latex_keys_exponent_index + 2]
+            else:
+                break
 
         return values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx
 
@@ -390,6 +406,7 @@ class StringTransformer:
                 _logger.debug('self.latex_dict: {}'.format(self.latex_dict))
                 self.brackets, self.brackets_opening, self.brackets_closing \
                     = get_pairs_of_brackets_from_string(self.input_string)
+                self.initial_brackets = copy.deepcopy(self.brackets)
 
     def get_multiple_input_processed(self, read_range, input_iteration, number_of_parameters):
         """Inserts a list of terms separated by commas into string_in_progress.
@@ -600,6 +617,7 @@ class StringTransformer:
             if caret_index in {0, len(self.input_string) - 1}:
                 return set_attributes_when_incorrect()
 
+            self.latex_dict[caret_index] = '}^{'
             indexes = self._get_indexes_before_and_after_from_values_and_latex(caret_index)
             if indexes:
                 values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx = indexes
@@ -610,9 +628,7 @@ class StringTransformer:
             base_value = self.values_dict[values_base_idx]
 
             self.latex_dict[latex_base_idx] = '{{' + self.latex_dict.get(latex_base_idx, '')
-            self.latex_dict[caret_index] = '}^{'
             self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}}'
-
 
             # case: ...^-integer
             if values_exponent_idx == caret_index + 2 and self.input_string[caret_index + 1] == '-':
@@ -736,7 +752,7 @@ class StringTransformer:
                     self.latex_dict[last_operation_position] = '-'
                 elif operation == "*":
                     return_value = m1.multiply_matrix(m2)
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 else:
                     return set_attributes_when_incorrect()
             elif isinstance(m1, tuple) and isinstance(m2, tuple):
@@ -749,7 +765,7 @@ class StringTransformer:
                     self.latex_dict[last_operation_position] = '-'
                 elif operation == '*':
                     return_value = algebra.get_fraction_cancelled_down(m10 * m20, m11 * m21)
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 elif operation == '/':
                     return_value = algebra.get_product_of_fractions(m10, m11, m21, m20)
                     if return_value is None:
@@ -769,7 +785,7 @@ class StringTransformer:
             elif isinstance(m1, algebra.Matrix) and isinstance(m2, tuple):
                 if operation == '*':
                     return_value = m1.multiply_scalar(m2[0], m2[1])
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 elif operation == '/':
                     return_value = m1.multiply_scalar(m2[1], m2[0])
                     self.latex_dict[last_operation_position] = '\\div'
@@ -963,14 +979,6 @@ def get_ids_before_and_after_in_dict(the_dict, idx):
     return left_idx, right_idx
 
 
-def find_next(lst, elt):
-    pass
-
-
-def find_previous(lst, elt):
-    pass
-
-
 def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
                                                idx_to=None):
     # todo: redundant?
@@ -992,7 +1000,6 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
         idx_to = len(list_of_tuples) - 1
     else:
         idx_to -= 1
-    print('range is from: {} to {}'.format(idx_from, idx_to))
 
     if idx_to < idx_from:
         return None
@@ -1024,7 +1031,7 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
 
 
 def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
-                                                     idx_to=None):
+                                                      idx_to=None):
     """
     binary search of a tuple whose certain coordinate is less than search_value
     Args:
@@ -1044,7 +1051,6 @@ def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_val
         idx_to = len(list_of_tuples) - 1
     else:
         idx_to -= 1
-    # print('range is from: {} to {}'.format(idx_from, idx_to))
 
     if idx_to < idx_from:
         return None
@@ -1074,9 +1080,11 @@ def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_val
                                                                      idx_mid + 1)
     except Exception as e:
         _logger.error('*' * 20 + ' ERROR ' + '*' * 20)
+        _logger.error(f'{e}')
         _logger.error('list_of_tuples: {}, search_value: {}, which_coordinate: {}, idx_from: {}, idx_to: {}'.format(
             list_of_tuples, search_value, which_coordinate, idx_from, idx_to))
         _logger.error('idx_mid: {}'.format(idx_mid))
+
         raise
 
 
@@ -1254,7 +1262,8 @@ def get_string_from_dict(dict_to_convert):
 
 
 def get_latex_from_dict(dict_to_convert):
-    before, after = '{', '}'
+    # before, after = '{', '}'
+    before, after = '', ''
     keys = list(dict_to_convert)
     keys.sort(reverse=True)
     chars_not_to_be_surrounded = ['{', '}', '(', ')', '^', '+', '-', '*', '/']
@@ -1359,62 +1368,62 @@ def get_input_read(user_input, matrices_dict):
         output_value (algebra.Matrix) - the value to be saved when clicked
     """
     user_input = user_input.replace(' ', '')
-    try:
-        transformer = StringTransformer(input_string=user_input.strip(),
-                                        matrices_dict=matrices_dict,
-                                        )
-        transformer.debug(inspect.stack(), 'BEFORE read_input')
-        if transformer.processed:
-            return mathjax_text_wrap(transformer.output_message), \
-                   transformer.input_latex, \
-                   transformer.refresh_storage, False, None
+    # try:
+    transformer = StringTransformer(input_string=user_input.strip(),
+                                    matrices_dict=matrices_dict,
+                                    )
+    transformer.debug(inspect.stack(), 'BEFORE read_input')
+    if transformer.processed:
+        return mathjax_text_wrap(transformer.output_message), \
+               transformer.input_latex, \
+               transformer.refresh_storage, False, None
 
-        if not transformer.correct_so_far:
-            return mathjax_text_wrap(transformer.output_message), \
-                   mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
-                   transformer.refresh_storage, False, None
-        transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
+    if not transformer.correct_so_far:
+        return mathjax_text_wrap(transformer.output_message), \
+               mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
+               transformer.refresh_storage, False, None
+    transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
 
-        saveable = False
-        output_value = transformer.output_value
-        if transformer.correct_so_far:
-            input_processed = mathjax_wrap(transformer.output_message)
-            input_latexed = mathjax_wrap(transformer.input_latex)
-            if isinstance(transformer.output_value, algebra.Matrix):
-                saveable = True
-                output_value = {
-                    'name': '',
-                    'rows': output_value.rows,
-                    'columns': output_value.columns,
-                    'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
-                }
-            if transformer.potential_matrix_name:
-                refresh_storage = 1
-                keys = list(transformer.values_dict)
-                if len(keys) != 1:
-                    _logger.error(f'to many values in dict: {transformer.values_dict}')
-                    return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
-                the_key = keys[0]
-                if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
-                    return mathjax_text_wrap('Only matrices can be saved.'), \
-                           mathjax_text_wrap(transformer.original_user_input), False, \
-                           False, None
-                _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
-                matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
-                database.save_matrix(transformer.potential_matrix_name, matrices_dict)
-            else:
-                refresh_storage = 0
+    saveable = False
+    output_value = transformer.output_value
+    if transformer.correct_so_far:
+        input_processed = mathjax_wrap(transformer.output_message)
+        input_latexed = mathjax_wrap(transformer.input_latex)
+        if isinstance(transformer.output_value, algebra.Matrix):
+            saveable = True
+            output_value = {
+                'name': '',
+                'rows': output_value.rows,
+                'columns': output_value.columns,
+                'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
+            }
+        if transformer.potential_matrix_name:
+            refresh_storage = 1
+            keys = list(transformer.values_dict)
+            if len(keys) != 1:
+                _logger.error(f'to many values in dict: {transformer.values_dict}')
+                return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
+            the_key = keys[0]
+            if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
+                return mathjax_text_wrap('Only matrices can be saved.'), \
+                       mathjax_text_wrap(transformer.original_user_input), False, \
+                       False, None
+            _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
+            matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
+            database.save_matrix(transformer.potential_matrix_name, matrices_dict)
         else:
-            input_processed = mathjax_text_wrap(transformer.output_message)
-            input_latexed = transformer.original_user_input
             refresh_storage = 0
-    except Exception as e:
-        input_processed = mathjax_text_wrap('Incorrect input.')
-        input_latexed = user_input
-        refresh_storage = False
-        saveable = False
-        output_value = None
-        _logger.error('an error occurred. {}'.format(e))
+    else:
+        input_processed = mathjax_text_wrap(transformer.output_message)
+        input_latexed = transformer.original_user_input
+        refresh_storage = 0
+    # except Exception as e:
+    #     input_processed = mathjax_text_wrap('Incorrect input.')
+    #     input_latexed = user_input
+    #     refresh_storage = False
+    #     saveable = False
+    #     output_value = None
+    #     _logger.error('an error occurred. {}'.format(e))
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
 
@@ -1490,19 +1499,10 @@ def debug_intro(inspect_stack):
     line_number = stack[2]
     # line_content = stack[4][0].strip()
     method_name = stack[3]
-    print(f'>> {file_name}, {method_name}, line: {line_number}')
+    _logger.debug(f'>> {file_name}, {method_name}, line: {line_number}')
 
 
 if __name__ == '__main__':
-    st = '(((aaa)aa(aa(aaa))aa)aaaaa(aaa))aa(aa)'
-    br, bro, brc = get_pairs_of_brackets_from_string(st)
-    print(br)
-    for i in range(len(st)):
-        t = find_tuple_before_in_list_of_tuples_by_coordinate(br, i)
-        correct = (t is not None and t[0] < i)
-        info_st = '{}: {}, {}'.format(i, t, correct)
-        print(info_st)
-        # print((' ' * 30 + info_st) if t else info_st)
     pass
 
 # TESTS:
