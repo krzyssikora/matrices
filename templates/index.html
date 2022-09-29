@@ -19,11 +19,11 @@
         <h1 class="section-header" id="storage-header">storage</h1>
         <div class="section-content">
             {% for matrix_data in matrices_list %}
-                <span class="deleteicon">
+                <div class="deleteicon">
                     <div class="algebra-chunk" id="storage-matrix-{{loop.index0}}">
                         <span id="storage-cross-{{loop.index0}}">x</span>
                         <p class="app-answer" data-name="{{matrix_data.0}}">{{matrix_data.1}}</p></div>
-                </span>
+                    </div>
             {% endfor %}
             <div id="add-matrix">add</div>
         </div>

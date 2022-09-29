@@ -109,7 +109,7 @@ var modal_content = document.getElementById('modal_div');
     algebra_header.style.width = algebra_box.clientWidth;
 
     function createAlgebraChunk(in_text, out_text, saveable, output_value) {
-        var level_0 = document.createElement('span');
+        var level_0 = document.createElement('div');
         level_0.className = 'deleteicon';
         var level_1 = document.createElement('div');
         level_1.className = 'algebra-chunk';

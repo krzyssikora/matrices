@@ -139,7 +139,7 @@ body {
   margin: var(--standard-margin-padding) 0;
 }
 
-span.deleteicon span {
+div.deleteicon span {
   position: relative;
   display: block;
   float: right;
@@ -159,7 +159,7 @@ span.deleteicon span {
   cursor: pointer;
 }
 
-span.deleteicon span:hover {
+div.deleteicon span:hover {
   border: solid 1px var(--colour-left-border);
 }
 
