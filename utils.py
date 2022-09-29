@@ -10,29 +10,36 @@ _logger = logging.getLogger('log.utils')
 
 class StringTransformer:
     def __init__(self, input_string, matrices_dict):
+        """
+        An object whose parameters allow transformation of an input string from user
+        into latex form and a processed answer.
+        Args:
+            input_string (str): from user
+            matrices_dict (dict): items are (matrix name: algebra.Matrix object)
+        """
         self.original_user_input = input_string
-        self.input_string = input_string
-        self.matrices_dict = matrices_dict
+        self.input_string = input_string        # this will be changed, processed characters will be replaced
+        self.matrices_dict = matrices_dict      # {name: algebra.Matrix}
 
-        self.values_dict = dict()
-        self.latex_dict = dict()
+        self.values_dict = dict()               # {idx from input: fraction (tuple) or algebra.Matrix}
+        self.latex_dict = dict()                # {idx from input: part of LaTeX string}
 
         self.initial_brackets = None
-        self.brackets = None
+        self.brackets = None                    # list of tuples (opening bracket, closing bracket)
         self.brackets_opening = None
         self.brackets_closing = None
 
-        self.output_value = None
-        self.output_message = None
-        self.input_latex = None
-        self.correct_so_far = True
-        self.refresh_storage = False
+        self.output_value = None                # algebra.Matrix if a result is a matrix, so it can be stored
+        self.output_message = None              # message to be displayed when an input is incorrect
+        self.input_latex = None                 # input transformed to LaTeX form
+        self.correct_so_far = True              # when false, there is no sense to proceed
+        self.refresh_storage = False            # True when input is of type 'name=...'
 
-        self.potential_matrix_name = None
-        self.processed = False
+        self.potential_matrix_name = None       # a name to which the outcome value is to be assigned
+        self.processed = False                  # True when input is processed and there is no need to continue
 
-        self.past_versions = list()
-        self.debug_fields = list()
+        self.past_versions = list()             # used for debugging, stores copies of self debug fields
+        self.debug_fields = list()              # fields to be stored for debugging
 
         self.simplify_input_string()
 
@@ -59,7 +66,7 @@ class StringTransformer:
             ret_string += elt.rjust(3)
         ret_string += '\n'
         for name, value in self.debug_fields:
-            if value is not None:  # != '0128409174501':
+            if value is not None:
                 if isinstance(value, dict):
                     keys = list(value)
                     keys.sort()
@@ -72,6 +79,14 @@ class StringTransformer:
         return ret_string
 
     def _get_indexes_before_and_after_from_values_and_latex(self, caret_index):
+        """
+        Args:
+            caret_index: the position of a caret '^' in the input_string
+
+        Returns:
+            indexes of base and exponent in self.values_dict for evaluation of a power and
+            indexes of start of base and end of exponent in self.latex_dict to place there curly braces '{', '}'
+        """
         end = len(self.input_string)
 
         # get indexes for values
@@ -347,6 +362,12 @@ class StringTransformer:
         return
 
     def simplify_input_string(self):
+        """
+        - checks whether the input contains restricted characters
+        - checks if the string is a single command that does not produce an output (del M)
+        - finds out if the output is to be stored and if the name of the new matrix is correct
+        - simplifies brackets and stores them on self.brackets
+        """
         restricted_char_found, message, escaped_string = restricted_chars_used(self.input_string)
         if restricted_char_found:
             self.output_message = message
@@ -1522,5 +1543,6 @@ if __name__ == '__main__':
 # 2^3^2
 # 2^(3-2)+(4-2)^3-(3-1)^(5-3)
 # 2^(3-2)+(4-2)^3-(3-1)^(5-3) + 2^3^2
+
 
 # todo: tests (?)
