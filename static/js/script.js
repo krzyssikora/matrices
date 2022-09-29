@@ -5,6 +5,8 @@ var algebra_content_idx = 1;
 var previousInputs = [];
 var previousInputIndex = -1;
 var output_value;
+var pop_up = document.getElementById('pop-up-universal');
+var modal_content = document.getElementById('modal_div');
 
 (function() {
     "use strict";
@@ -24,46 +26,13 @@ var output_value;
 
         xmlhttp.open("GET", url, true);
         xmlhttp.send();
+        window.loaded = 1;
     };
 
     function convert(elt) {
         return $("<span />", { html: elt }).text();
     };
 
-    // function getHiddenData(data_id, data_type) {
-    //     // data_id (str): element's id
-    //     // data_type (str): either 'int' or 'object' or 'html'
-    //     var dom_elt = document.getElementById(data_id);
-    //     var elt_string = dom_elt.innerHTML;
-    //     var ret_object;
-    //     if (elt_string.length == 0) {
-    //         ret_object = ''
-    //     } else if (data_type == 'int') {
-    //         ret_object = parseInt(elt_string)
-    //     } else if (data_type == 'object') {
-    //         elt_string = convert(elt_string);
-    //         ret_object = JSON5.parse(elt_string);
-    //     } else if (data_type == 'html') {
-    //         ret_object = convert(elt_string)
-    //     } else {
-    //         ret_object = elt_string;
-    //     };
-    //     dom_elt.style.display = 'none';
-    //     return ret_object;
-    // };
-
-    // function updateStorage() {
-    //     setTimeout(() => {
-    //         $( "#storage div.section-content" ).load(window.location.href + " #storage div.section-content>*","" );
-    //         setTimeout(() => {
-    //             MathJax.typesetPromise();
-    //             ScrollToBottom(document.getElementById('storage'));
-    //             focusOnInput();
-    //             addStorageListeners();
-    //         }, 100);
-    //     }, 100);
-    // };
-    // TODO the timeouts above must be changed
     function updateStorage() {
         window.loaded = 0;
         checkLoaded();
@@ -98,32 +67,35 @@ var output_value;
         input.focus();
     };
 
-    function checkLoaded() {
-        // info that mathJax is loading
-        var pop_up = document.getElementById('pop-up-universal');
-        var modal_content = document.getElementById('modal_div');
+    function showMathsLoadingPopUp() {
+        pop_up.style.display = 'block';
+        var i = 0
+        for (let j=0; j<20; j++) {
+            let clone = document.createElement('span');
+            clone.innerHTML = 'mathematics is loading... ';
+            clone.id = `wait_${i}`;
+            i++;
+            clone.style.color = '#' + Math.floor(Math.random()*16777215).toString(16);
+            clone.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            clone.style.fontSize = (50 + Math.floor(Math.random()*35)).toString(16) + 'px';
+            modal_content.appendChild(clone);
+        };
+    };
 
+    function hideMathsLoadingPopUp() {
+        modal_content.innerHTML = '';
+        pop_up.style.display = 'none';
+        ScrollToBottom(document.getElementById('storage'));
+        focusOnInput();
+    };
+
+    function checkLoaded() {
+        // info that mathJax is loading on start
+        showMathsLoadingPopUp();
         if(window.loaded === 0) {
-            pop_up.style.display = 'block';
-            var i = 0
-            for (let j=0; j<5; j++) {
-                let clone = document.createElement('span');
-                clone.innerHTML = 'mathematics is loading... ';
-                clone.id = `wait_${i}`;
-                i++;
-                clone.style.color = '#' + Math.floor(Math.random()*16777215).toString(16);
-                clone.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                clone.style.fontSize = (50 + Math.floor(Math.random()*35)).toString(16) + 'px';
-                modal_content.appendChild(clone);
-            };
-            window.setTimeout(checkLoaded, 1);
+            window.setTimeout(checkLoaded, 5);
         } else {
-            setTimeout(() => {
-                modal_content.innerHTML = '';
-                pop_up.style.display = 'none';
-                ScrollToBottom(document.getElementById('storage'));
-                focusOnInput();
-            }, 1)  
+            hideMathsLoadingPopUp();
         };
     }
     checkLoaded();
@@ -169,7 +141,7 @@ var output_value;
 
     var user_input_field = document.getElementById('user-input');
 
-    function getDataFromUserInput() {
+    function getDataFromUserInput(callback) {
         var initial_text = user_input_field.value;
         var replacements = {
             '+': 'plussign',
@@ -187,15 +159,26 @@ var output_value;
         var refresh_storage;
 
         ajax_get(url, function(data) {
-            if (data['message_type'] == 1) {
+            if (data['message_type'] == 0) {
+                // clear screen
+                const algebra_elements = algebra_box.querySelectorAll('.deleteicon');
+                algebra_elements.forEach(element => {
+                    element.remove()
+                });
+                algebra_content_idx = 1;
+                user_input_field.value = '';
+            } else if (data['message_type'] == 1) {
+                // general help
                 window.location.href = '/help';
             } else if (data['message_type'] == 2) {
+                // command help
                 var help_table = data['help_table'];
                 user_input_field.value = '';
                 $.getScript('/static/js/script_help.js', function(){
                 	showHelpCommandInfo(help_table);
                 });
             } else if (data['message_type'] == 3) {
+                // other (algebraic)
                 in_text = data['input_latexed'];
                 out_text = data['input_processed'];
                 refresh_storage = data['refresh_storage'];
@@ -217,7 +200,10 @@ var output_value;
                 ScrollToBottom(document.getElementById('algebra'))
                 focusOnInput();
             };
+            callback();
         });
+
+        
     };
 
     user_input_field.addEventListener('keypress', (e) => {
@@ -227,7 +213,8 @@ var output_value;
             e.preventDefault();
             previousInputs.push(user_input_field.value);
             previousInputIndex = previousInputs.length - 1;
-            getDataFromUserInput();
+            showMathsLoadingPopUp();
+            getDataFromUserInput(hideMathsLoadingPopUp);
         };
     });
 
@@ -497,9 +484,10 @@ var output_value;
         var matrix = {'name': name, 'rows': rows, 'columns': columns, 'values': values};
         algebra_content = $("#algebra div.section-content").html();
         sendMatrixDataToCreate(matrix);
-        updateStorage();
-
-        addStorageListeners();
+        setTimeout(() => {
+            updateStorage();
+            addStorageListeners();
+        }, 500);
     });
 
     function checkNameAndConfirm(matrix_only_name_field, output_value) {
@@ -515,7 +503,6 @@ var output_value;
             var columns = output_value['columns'];
             var values = output_value['values'];
             var matrix = {'name': name, 'rows': rows, 'columns': columns, 'values': values};
-            // algebra_content = $("#algebra div.section-content").html();
             sendMatrixDataToCreate(matrix);
             setTimeout(() => {
                 updateStorage();

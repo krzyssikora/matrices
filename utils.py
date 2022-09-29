@@ -1365,62 +1365,64 @@ def get_input_read(user_input, matrices_dict):
         output_value (algebra.Matrix) - the value to be saved when clicked
     """
     user_input = user_input.replace(' ', '')
-    # try:
-    transformer = StringTransformer(input_string=user_input.strip(),
-                                    matrices_dict=matrices_dict,
-                                    )
-    transformer.debug(inspect.stack(), 'BEFORE read_input')
-    if transformer.processed:
-        return mathjax_text_wrap(transformer.output_message), \
-               transformer.input_latex, \
-               transformer.refresh_storage, False, None
+    try:
+        transformer = StringTransformer(input_string=user_input.strip(),
+                                        matrices_dict=matrices_dict,
+                                        )
+        transformer.debug(inspect.stack(), 'BEFORE read_input')
+        if transformer.processed:
+            return mathjax_text_wrap(transformer.output_message), \
+                   transformer.input_latex, \
+                   transformer.refresh_storage, False, None
 
-    if not transformer.correct_so_far:
-        return mathjax_text_wrap(transformer.output_message), \
-               mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
-               transformer.refresh_storage, False, None
-    transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
+        if not transformer.correct_so_far:
+            return mathjax_text_wrap(transformer.output_message), \
+                   mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
+                   transformer.refresh_storage, False, None
+        transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
 
-    saveable = False
-    output_value = transformer.output_value
-    if transformer.correct_so_far:
-        input_processed = mathjax_wrap(transformer.output_message)
-        input_latexed = mathjax_wrap(transformer.input_latex)
-        if isinstance(transformer.output_value, algebra.Matrix):
-            saveable = True
-            output_value = {
-                'name': '',
-                'rows': output_value.rows,
-                'columns': output_value.columns,
-                'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
-            }
-        if transformer.potential_matrix_name:
-            refresh_storage = 1
-            keys = list(transformer.values_dict)
-            if len(keys) != 1:
-                _logger.error(f'to many values in dict: {transformer.values_dict}')
-                return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
-            the_key = keys[0]
-            if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
-                return mathjax_text_wrap('Only matrices can be saved.'), \
-                       mathjax_text_wrap(transformer.original_user_input), False, \
-                       False, None
-            _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
-            matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
-            database.save_matrix(transformer.potential_matrix_name, matrices_dict)
+        saveable = False
+        output_value = transformer.output_value
+        if transformer.correct_so_far:
+            input_processed = mathjax_wrap(transformer.output_message)
+            input_latexed = mathjax_wrap(transformer.input_latex)
+            if isinstance(transformer.output_value, algebra.Matrix):
+                saveable = True
+                output_value = {
+                    'name': '',
+                    'rows': output_value.rows,
+                    'columns': output_value.columns,
+                    'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
+                }
+            if transformer.potential_matrix_name:
+                refresh_storage = 1
+                keys = list(transformer.values_dict)
+                if len(keys) != 1:
+                    _logger.error(f'to many values in dict: {transformer.values_dict}')
+                    return mathjax_text_wrap('error'), \
+                        mathjax_text_wrap(transformer.original_user_input), \
+                        False, False, ''
+                the_key = keys[0]
+                if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
+                    return mathjax_text_wrap('Only matrices can be saved.'), \
+                           mathjax_text_wrap(transformer.original_user_input), False, \
+                           False, None
+                _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
+                matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
+                database.save_matrix(transformer.potential_matrix_name, matrices_dict)
+            else:
+                refresh_storage = 0
         else:
+            input_processed = mathjax_text_wrap(transformer.output_message)
+            input_latexed = transformer.original_user_input
             refresh_storage = 0
-    else:
-        input_processed = mathjax_text_wrap(transformer.output_message)
-        input_latexed = transformer.original_user_input
-        refresh_storage = 0
-    # except Exception as e:
-    #     input_processed = mathjax_text_wrap('Incorrect input.')
-    #     input_latexed = user_input
-    #     refresh_storage = False
-    #     saveable = False
-    #     output_value = None
-    #     _logger.error('an error occurred. {}'.format(e))
+    except Exception as e:
+        input_processed = mathjax_text_wrap('Incorrect input.')
+        input_latexed = user_input
+        refresh_storage = False
+        saveable = False
+        output_value = None
+        _logger.error('an error occurred. {}'.format(e))
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
 
@@ -1521,5 +1523,4 @@ if __name__ == '__main__':
 # 2^(3-2)+(4-2)^3-(3-1)^(5-3)
 # 2^(3-2)+(4-2)^3-(3-1)^(5-3) + 2^3^2
 
-# todo:
-#  1. mathematics is loading should appear after input / new matrix
+# todo: tests (?)

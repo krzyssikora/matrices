@@ -56,6 +56,9 @@ def get_matrix_data_to_create(matrix):
         matrices_dict[name] = new_matrix
         database.save_matrix(name, matrices_dict)
     matrices_list = utils.get_list_of_matrix_dict_latexed(matrices_dict)
+    _logger.debug('*' * 100)
+    for mtrx in matrices_list:
+        _logger.debug(f'{mtrx}')
     return render_template(
         'index.html',
         matrices_list=matrices_list
@@ -149,13 +152,12 @@ _logger = logging.getLogger('log')
 _logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
 dtnow = datetime.now()
-log_filename = f'{dtnow.year}-{str(dtnow.month).rjust(2, "0")}-{str(dtnow.day).rjust(2, "0")}_' \
-               f'{str(dtnow.hour).rjust(2, "0")}{str(dtnow.minute).rjust(2, "0")}_matrices.log'
+log_filename = f'{dtnow.year}-{str(dtnow.month).rjust(2, "0")}-{str(dtnow.day).rjust(2, "0")}_matrices.log'
 fh = logging.FileHandler('logs/' + log_filename)
 fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
+ch.setLevel(logging.DEBUG)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)

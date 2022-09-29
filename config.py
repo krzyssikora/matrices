@@ -119,4 +119,3 @@ help_commands = [['CLS', [['cls', 'Clears the screen and prints again the names 
                           ['del(M, N)', 'Deletes a few matrices from the database. Their names should be separated</br>'
                                         'by commas and they should be identical to those listed.']]],
                  ['out', [['out', 'Ends the application.']]]]
-
