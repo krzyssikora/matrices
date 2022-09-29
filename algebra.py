@@ -1,7 +1,8 @@
 import math
 from matrices import database
-from matrices.config import _logger
+import logging
 
+_logger = logging.getLogger('log.algebra')
 
 def get_fraction_from_string(fraction_as_string):
     """Changes a string that represents a fraction into a tuple (numerator, denominator).

@@ -1,7 +1,5 @@
 from flask import Flask
 
-from matrices.config import _logger
-
 app = Flask(__name__)
 
 import matrices.views

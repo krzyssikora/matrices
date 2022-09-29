@@ -1,9 +1,11 @@
-# from matrices.algebra import Matrix
 from matrices import database, algebra, config
-from matrices.config import _logger
+import logging
 import re
 import inspect
 import os
+import copy
+
+_logger = logging.getLogger('log.utils')
 
 
 class StringTransformer:
@@ -15,6 +17,7 @@ class StringTransformer:
         self.values_dict = dict()
         self.latex_dict = dict()
 
+        self.initial_brackets = None
         self.brackets = None
         self.brackets_opening = None
         self.brackets_closing = None
@@ -28,32 +31,34 @@ class StringTransformer:
         self.potential_matrix_name = None
         self.processed = False
 
+        self.past_versions = list()
+        self.debug_fields = list()
+
         self.simplify_input_string()
 
-    def __str__(self):
-        ret_string = '\n' + '-' * 50 + '\n'
-        for i in range(len(self.original_user_input)):
-            ret_string += str(i).rjust(3)
-        ret_string += '\n'
-        for elt in list(self.original_user_input):
-            ret_string += elt.rjust(3)
-        ret_string += '\n'
-        for name, value in [
-            # ('self.original_user_input', self.original_user_input),
+    def all_debug_fields(self):
+        return [
             ('self.input_string', self.input_string),
-            # ('self.matrices_dict', self.matrices_dict),
             ('self.values_dict', self.values_dict),
             ('self.latex_dict', self.latex_dict),
             ('self.brackets', self.brackets),
-            # ('self.brackets_opening', self.brackets_opening),
-            # ('self.brackets_closing', self.brackets_closing),
             ('self.output_message', self.output_message),
             ('self.output_value', self.output_value),
             ('self.input_latex', self.input_latex),
             ('self.correct_so_far', self.correct_so_far),
             ('self.refresh_storage', self.refresh_storage),
             ('self.potential_matrix_name', self.potential_matrix_name)
-        ]:
+        ]
+
+    def __str__(self):
+        ret_string = '\n' + '-' * 50 + '\n'
+        for ch in range(len(self.original_user_input)):
+            ret_string += str(ch).rjust(3)
+        ret_string += '\n'
+        for elt in list(self.original_user_input):
+            ret_string += elt.rjust(3)
+        ret_string += '\n'
+        for name, value in self.debug_fields:
             if value is not None:  # != '0128409174501':
                 if isinstance(value, dict):
                     keys = list(value)
@@ -66,12 +71,59 @@ class StringTransformer:
                     ret_string += f'{name.ljust(26)}: {value}\n'
         return ret_string
 
-    def debug(self, stack, intro_statement=None):
-        _logger.debug('')
-        if intro_statement:
-            _logger.debug(intro_statement)
+    def _get_indexes_before_and_after_from_values_and_latex(self, caret_index):
+        end = len(self.input_string)
+
+        # get indexes for values
+        indexes_from_values = list(self.values_dict)
+        indexes_from_values.sort()
+        indexes_from_values_before = [idx for idx in indexes_from_values if idx < caret_index]
+        indexes_from_values_after = [idx for idx in indexes_from_values if idx > caret_index]
+        values_base_idx = indexes_from_values_before[-1] if indexes_from_values_before else 0
+        values_exponent_idx = indexes_from_values_after[0] if indexes_from_values_after else end
+
+        indexes_from_latex = list(self.latex_dict)
+        indexes_from_latex.sort()
+        latex_keys_caret_index = indexes_from_latex.index(caret_index)
+        # get opening index for latex
+        latex_base_idx = indexes_from_latex[latex_keys_caret_index - 1]
+        brackets = find_tuple_in_list_of_tuples_by_coordinate(self.initial_brackets, latex_base_idx, 1)
+        if brackets:
+            latex_base_idx = brackets[0]
+        # get closing index for latex
+        latex_exponent_idx = indexes_from_latex[latex_keys_caret_index + 1]
+        while True:
+            brackets = find_tuple_in_list_of_tuples_by_coordinate(self.initial_brackets, latex_exponent_idx, 0)
+            if brackets is not None:
+                latex_exponent_idx = brackets[1]
+                # if latex_exponent_idx not in indexes_from_latex:
+                #     break
+            latex_keys_exponent_index = indexes_from_latex.index(latex_exponent_idx)
+            if latex_keys_exponent_index < len(indexes_from_latex) - 1 and \
+                    '^' in self.latex_dict.get(indexes_from_latex[latex_keys_exponent_index + 1], ''):
+                latex_exponent_idx = indexes_from_latex[latex_keys_exponent_index + 2]
+            else:
+                break
+
+        return values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx
+
+    def debug(self, stack, intro_statement=''):
         debug_intro(stack)
-        _logger.debug(self)
+        new_state = copy.deepcopy(self)
+        new_state.past_versions = None
+        new_state.debug_fields = None
+        self.debug_fields = list()
+        self.past_versions.append(new_state)
+        if len(self.past_versions) <= 1:
+            self.debug_fields = copy.deepcopy(self.all_debug_fields())
+        else:
+            old_state = self.past_versions[-2]
+            for old, new in zip(old_state.all_debug_fields(), new_state.all_debug_fields()):
+                if old[1] != new[1]:
+                    self.debug_fields.append(new)
+        _logger.debug(intro_statement + f'... {len(self.debug_fields)} changes from previous state')
+        if self.debug_fields:
+            _logger.debug(self)
 
     def get_signs_tidied_up(self):
         """
@@ -295,9 +347,10 @@ class StringTransformer:
         return
 
     def simplify_input_string(self):
-        restricted_char_found, message = restricted_chars_used(self.input_string)
+        restricted_char_found, message, escaped_string = restricted_chars_used(self.input_string)
         if restricted_char_found:
             self.output_message = message
+            self.input_string = escaped_string
             self.correct_so_far = False
             return
 
@@ -350,6 +403,7 @@ class StringTransformer:
                 _logger.debug('self.latex_dict: {}'.format(self.latex_dict))
                 self.brackets, self.brackets_opening, self.brackets_closing \
                     = get_pairs_of_brackets_from_string(self.input_string)
+                self.initial_brackets = copy.deepcopy(self.brackets)
 
     def get_multiple_input_processed(self, read_range, input_iteration, number_of_parameters):
         """Inserts a list of terms separated by commas into string_in_progress.
@@ -517,6 +571,9 @@ class StringTransformer:
         for opening_index, closing_index in mutually_exclusive_brackets:
             self.latex_dict[opening_index] = '{('
             self.latex_dict[closing_index] = ')}'
+            self.brackets.remove((opening_index, closing_index))
+            self.input_string = self.input_string[:opening_index] + '_' + self.input_string[opening_index + 1:]
+            self.input_string = self.input_string[:closing_index] + '_' + self.input_string[closing_index + 1:]
             _logger.debug(f'...reading input from {inspect.stack()[0][3]}, '
                           f'read_range: {(opening_index + 1, closing_index)}, '
                           f'input_iteration: {input_iteration}')
@@ -534,11 +591,6 @@ class StringTransformer:
                 self.values_dict[0] = outcome
                 if 1 in self.values_dict:
                     self.values_dict.pop(1)
-            # else:
-            #     self.values_dict[opening_index] = self.values_dict[opening_index + 1]
-            # for idx in {opening_index + 1, closing_index + 1}:
-            #     if idx in self.values_dict:
-            #         self.values_dict.pop(idx)
 
     def clean_powers(self, read_range):
         """
@@ -550,42 +602,39 @@ class StringTransformer:
             self.correct_so_far = False
             self.output_message = message if message else 'A power cannot be evaluated.'
 
-        _logger.debug(f'clean_powers, read_range: {read_range}')
         starting_position, ending_position = read_range
+
+        _logger.debug(f'clean_powers, read_range: {read_range}')
         caret_indexes = [idx for idx, char in enumerate(self.input_string) if char == '^'
                          and idx in range(starting_position, ending_position)]
         caret_indexes.sort(reverse=True)
         for caret_index in caret_indexes:
+            if self.input_string[starting_position: ending_position].count('^') > 0:
+                self.debug(inspect.stack(), 'inside powers, read_range: {}'.format(read_range))
             if caret_index in {0, len(self.input_string) - 1}:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[caret_index] = '^{'
-            indexes = list(self.values_dict)
-            indexes.sort()
-            indexes_before = [idx for idx in indexes if idx < caret_index]
-            indexes_after = [idx for idx in indexes if idx > caret_index]
-
-            if indexes_before and indexes_after:
-                base_idx = max(indexes_before)
-                exponent_idx = min(indexes_after)
-                latex_base_idx = indexes_before[-2] if len(indexes_before) > 1 else 0
-                latex_exponent_idx = indexes_after[1] if len(indexes_after) > 1 else len(self.input_string)
+            self.latex_dict[caret_index] = '}^{'
+            indexes = self._get_indexes_before_and_after_from_values_and_latex(caret_index)
+            if indexes:
+                values_base_idx, values_exponent_idx, latex_base_idx, latex_exponent_idx = indexes
             else:
                 return set_attributes_when_incorrect()
 
-            self.latex_dict[latex_base_idx] = '{' + self.latex_dict.get(latex_base_idx, '')
+            exponent_value = self.values_dict[values_exponent_idx]
+            base_value = self.values_dict[values_base_idx]
+
+            self.latex_dict[latex_base_idx] = '{{' + self.latex_dict.get(latex_base_idx, '')
             self.latex_dict[latex_exponent_idx] = self.latex_dict.get(latex_exponent_idx, '') + '}}'
 
-            base_value = self.values_dict[base_idx]
-            exponent_value = self.values_dict[exponent_idx]
-
             # case: ...^-integer
-            if exponent_idx == caret_index + 2 and self.input_string[caret_index + 1] == '-':
+            if values_exponent_idx == caret_index + 2 and self.input_string[caret_index + 1] == '-':
                 if isinstance(exponent_value, tuple):
                     exponent_value = (-exponent_value[0], exponent_value[1])
-                    self.values_dict[exponent_idx] = exponent_value
+                    self.values_dict[values_exponent_idx] = exponent_value
                 else:
                     return set_attributes_when_incorrect()
+
             # acceptable cases:
             # 1. base: matrix,   exponent: transpose
             # 2. base: matrix,   exponent: integer
@@ -593,7 +642,8 @@ class StringTransformer:
             if exponent_value == 'transpose' and isinstance(base_value, algebra.Matrix):
                 # 1. base: matrix,   exponent: transpose
                 new_value = base_value.transpose()
-                self.input_string = self.input_string[:exponent_idx] + '_' + self.input_string[exponent_idx + 1:]
+                self.input_string = \
+                    self.input_string[:values_exponent_idx] + '_' + self.input_string[values_exponent_idx + 1:]
             elif isinstance(exponent_value, tuple) and exponent_value[1] == 1:
                 if isinstance(base_value, algebra.Matrix):
                     # 2. base: integer,  exponent: integer
@@ -611,10 +661,10 @@ class StringTransformer:
             if new_value is None:
                 return set_attributes_when_incorrect()
             # introduce new value into values_dict
-            for idx in range(base_idx, exponent_idx + 1):
+            for idx in range(values_base_idx, values_exponent_idx + 1):
                 if idx in self.values_dict:
                     self.values_dict.pop(idx)
-            self.values_dict[base_idx] = new_value
+            self.values_dict[values_base_idx] = new_value
             self.input_string = self.input_string[:caret_index] + '_' + self.input_string[caret_index + 1:]
 
     def split_input_by_operations(self, operations, read_range, input_iteration):
@@ -662,7 +712,7 @@ class StringTransformer:
                     continue
                 last_operation_position = pos
                 operation = op
-            _logger.debug('last_operation_position before starting split: {}'.format(last_operation_position))
+        _logger.debug('last_operation_position before starting split: {}'.format(last_operation_position))
         if initial_position < last_operation_position < final_position - 1:  # divide into smaller pieces
             self.input_string = \
                 self.input_string[:last_operation_position] + '_' + self.input_string[last_operation_position + 1:]
@@ -699,7 +749,7 @@ class StringTransformer:
                     self.latex_dict[last_operation_position] = '-'
                 elif operation == "*":
                     return_value = m1.multiply_matrix(m2)
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 else:
                     return set_attributes_when_incorrect()
             elif isinstance(m1, tuple) and isinstance(m2, tuple):
@@ -712,7 +762,7 @@ class StringTransformer:
                     self.latex_dict[last_operation_position] = '-'
                 elif operation == '*':
                     return_value = algebra.get_fraction_cancelled_down(m10 * m20, m11 * m21)
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 elif operation == '/':
                     return_value = algebra.get_product_of_fractions(m10, m11, m21, m20)
                     if return_value is None:
@@ -732,7 +782,7 @@ class StringTransformer:
             elif isinstance(m1, algebra.Matrix) and isinstance(m2, tuple):
                 if operation == '*':
                     return_value = m1.multiply_scalar(m2[0], m2[1])
-                    self.latex_dict[last_operation_position] = '\\times'
+                    self.latex_dict[last_operation_position] = '\\times '
                 elif operation == '/':
                     return_value = m1.multiply_scalar(m2[1], m2[0])
                     self.latex_dict[last_operation_position] = '\\div'
@@ -776,8 +826,6 @@ class StringTransformer:
         start, end = read_range
         keys_in_range = [key for key in keys if start <= key < end]
         if len(keys_in_range) == 1:
-            return True
-        elif len(keys_in_range) == 1 and 0 in keys:
             return True
         else:
             _logger.error('inappropriate values in the dict: {}'.format(self.values_dict))
@@ -949,7 +997,6 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
         idx_to = len(list_of_tuples) - 1
     else:
         idx_to -= 1
-    print('range is from: {} to {}'.format(idx_from, idx_to))
 
     if idx_to < idx_from:
         return None
@@ -981,7 +1028,7 @@ def find_tuple_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, whi
 
 
 def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_value, which_coordinate=0, idx_from=None,
-                                                     idx_to=None):
+                                                      idx_to=None):
     """
     binary search of a tuple whose certain coordinate is less than search_value
     Args:
@@ -1001,7 +1048,6 @@ def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_val
         idx_to = len(list_of_tuples) - 1
     else:
         idx_to -= 1
-    # print('range is from: {} to {}'.format(idx_from, idx_to))
 
     if idx_to < idx_from:
         return None
@@ -1031,9 +1077,11 @@ def find_tuple_before_in_list_of_tuples_by_coordinate(list_of_tuples, search_val
                                                                      idx_mid + 1)
     except Exception as e:
         _logger.error('*' * 20 + ' ERROR ' + '*' * 20)
+        _logger.error(f'{e}')
         _logger.error('list_of_tuples: {}, search_value: {}, which_coordinate: {}, idx_from: {}, idx_to: {}'.format(
             list_of_tuples, search_value, which_coordinate, idx_from, idx_to))
         _logger.error('idx_mid: {}'.format(idx_mid))
+
         raise
 
 
@@ -1211,17 +1259,24 @@ def get_string_from_dict(dict_to_convert):
 
 
 def get_latex_from_dict(dict_to_convert):
-    before, after = '{', '}'
-    keys = list(dict_to_convert.keys())
-    keys.sort()
-    chars_not_to_be_surrounded = ['{', '}', '^']
+    # before, after = '{', '}'
+    before, after = '', ''
+    keys = list(dict_to_convert)
+    keys.sort(reverse=True)
+    chars_not_to_be_surrounded = ['{', '}', '(', ')', '^', '+', '-', '*', '/']
+    # chars_in_strings_not_to_be_surrounded = ['^']  # ['^', '+', '-', '*', '/']
     return_string = ''
     for key in keys:
         latex_string = dict_to_convert[key]
         if latex_string:
-            return_string += \
-                latex_string if any(char in latex_string for char in chars_not_to_be_surrounded) \
-                else f'{before}{latex_string}{after}'
+            return_string = \
+                (latex_string + return_string) \
+                if any(latex_string.startswith(char) for char in chars_not_to_be_surrounded) \
+                else (f'{before}{latex_string}{after}' + return_string)
+        # if not any(return_string.startswith(char) for char in chars_in_strings_not_to_be_surrounded) \
+        #         and not any(char in return_string for char in {'(', ')'}):
+        #     return_string = f'{before}{return_string}{after}'
+        _logger.debug('key: {}, latex_string: {}, return_string: {}'.format(key, latex_string.rjust(5), return_string))
     return return_string
 
 
@@ -1234,13 +1289,29 @@ def restricted_chars_used(input_string):
         restricted_char_used (bool),
         info message (str) - if True
     """
-    for letter in input_string:
+    restricted_char = False
+    restricted_chars_in_string = list()
+    restricted_chars_escaped = list()
+    for idx, letter in enumerate(input_string):
         if letter in {"=", "+", "-", "/", "*", "(", ")", "^", ".", ","} \
                 or (ord("A") <= ord(letter) <= ord("Z")) or letter.isdigit():
             continue
         else:
-            return True, f'Your input contains restricted character "{letter}".'
-    return False, ''
+            restricted_char = True
+            restricted_chars_in_string.append(letter)
+            if letter in {'_'}:
+                letter = '\\' + letter
+            restricted_chars_escaped.append(letter)
+    if restricted_char:
+        insert_str = \
+            f' "{restricted_chars_escaped[0]}"' if len(restricted_chars_escaped) == 1 \
+            else 's \"{}\"'.format("\", \"".join(restricted_chars_escaped))
+        return_string = f'Your input contains restricted character{insert_str}.'
+        for letter, letter_escaped in zip(restricted_chars_in_string, restricted_chars_escaped):
+            input_string = input_string.replace(letter, letter_escaped)
+    else:
+        return_string = ''
+    return restricted_char, return_string, input_string
 
 
 def correct_matrix_name(matrix_name_as_string):
@@ -1294,63 +1365,62 @@ def get_input_read(user_input, matrices_dict):
         output_value (algebra.Matrix) - the value to be saved when clicked
     """
     user_input = user_input.replace(' ', '')
-    try:
-        transformer = StringTransformer(input_string=user_input.strip(),
-                                        matrices_dict=matrices_dict,
-                                        )
-        transformer.debug(inspect.stack(), 'BEFORE read_input')
-        if transformer.processed:
-            return mathjax_text_wrap(transformer.output_message), \
-                   transformer.input_latex, \
-                   transformer.refresh_storage, False, None
+    # try:
+    transformer = StringTransformer(input_string=user_input.strip(),
+                                    matrices_dict=matrices_dict,
+                                    )
+    transformer.debug(inspect.stack(), 'BEFORE read_input')
+    if transformer.processed:
+        return mathjax_text_wrap(transformer.output_message), \
+               transformer.input_latex, \
+               transformer.refresh_storage, False, None
 
-        if not transformer.correct_so_far:
-            return mathjax_text_wrap(transformer.output_message), \
-                   mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
-                   transformer.refresh_storage, False, None
-        transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
+    if not transformer.correct_so_far:
+        return mathjax_text_wrap(transformer.output_message), \
+               mathjax_text_wrap(transformer.latex_dict.get(0, transformer.input_string)), \
+               transformer.refresh_storage, False, None
+    transformer.read_input(read_range=(0, len(transformer.input_string)), input_iteration=0)
 
-        saveable = False
-        output_value = transformer.output_value
-        if transformer.correct_so_far:
-            input_processed = mathjax_wrap(transformer.output_message)
-            input_latexed = mathjax_wrap(transformer.input_latex)
-            if isinstance(transformer.output_value, algebra.Matrix):
-                saveable = True
-                output_value = {
-                    'name': '',
-                    'rows': output_value.rows,
-                    'columns': output_value.columns,
-                    'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
-                }
-            if transformer.potential_matrix_name:
-                refresh_storage = 1
-                keys = list(transformer.values_dict)
-                if len(keys) != 1:
-                    _logger.error(f'to many values in dict: {transformer.values_dict}')
-                    return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
-                the_key = keys[0]
-                if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
-                    return mathjax_text_wrap('Only matrices can be saved.'), \
-                           mathjax_text_wrap(transformer.original_user_input), False, \
-                           False, None
-                _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
-                matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
-                database.save_matrix(transformer.potential_matrix_name, matrices_dict)
-            else:
-                refresh_storage = 0
+    saveable = False
+    output_value = transformer.output_value
+    if transformer.correct_so_far:
+        input_processed = mathjax_wrap(transformer.output_message)
+        input_latexed = mathjax_wrap(transformer.input_latex)
+        if isinstance(transformer.output_value, algebra.Matrix):
+            saveable = True
+            output_value = {
+                'name': '',
+                'rows': output_value.rows,
+                'columns': output_value.columns,
+                'values': get_values_for_js_matrix(output_value.mat, output_value.denominator)
+            }
+        if transformer.potential_matrix_name:
+            refresh_storage = 1
+            keys = list(transformer.values_dict)
+            if len(keys) != 1:
+                _logger.error(f'to many values in dict: {transformer.values_dict}')
+                return mathjax_text_wrap('error'), mathjax_text_wrap(transformer.original_user_input), False, False, ''
+            the_key = keys[0]
+            if not isinstance(transformer.values_dict[the_key], algebra.Matrix):
+                return mathjax_text_wrap('Only matrices can be saved.'), \
+                       mathjax_text_wrap(transformer.original_user_input), False, \
+                       False, None
+            _logger.debug(f'saving matrix {transformer.potential_matrix_name}')
+            matrices_dict[transformer.potential_matrix_name] = transformer.values_dict[0]
+            database.save_matrix(transformer.potential_matrix_name, matrices_dict)
         else:
-            input_processed = mathjax_text_wrap(transformer.output_message)
-            input_latexed = transformer.original_user_input
             refresh_storage = 0
-    except Exception as e:
-        input_processed = mathjax_text_wrap('Incorrect input.')
-        input_latexed = user_input
-        refresh_storage = False
-        saveable = False
-        output_value = None
-        _logger.error('an error occurred. {}'.format(e))
-        raise
+    else:
+        input_processed = mathjax_text_wrap(transformer.output_message)
+        input_latexed = transformer.original_user_input
+        refresh_storage = 0
+    # except Exception as e:
+    #     input_processed = mathjax_text_wrap('Incorrect input.')
+    #     input_latexed = user_input
+    #     refresh_storage = False
+    #     saveable = False
+    #     output_value = None
+    #     _logger.error('an error occurred. {}'.format(e))
 
     return input_processed, input_latexed, refresh_storage, saveable, output_value
 
@@ -1426,22 +1496,13 @@ def debug_intro(inspect_stack):
     line_number = stack[2]
     # line_content = stack[4][0].strip()
     method_name = stack[3]
-    print(f'>> {file_name}, {method_name}, line: {line_number}')
+    _logger.debug(f'>> {file_name}, {method_name}, line: {line_number}')
 
 
 if __name__ == '__main__':
-    st = '(((aaa)aa(aa(aaa))aa)aaaaa(aaa))aa(aa)'
-    br, bro, brc = get_pairs_of_brackets_from_string(st)
-    print(br)
-    for i in range(len(st)):
-        t = find_tuple_before_in_list_of_tuples_by_coordinate(br, i)
-        correct = (t is not None and t[0] < i)
-        info_st = '{}: {}, {}'.format(i, t, correct)
-        print(info_st)
-        # print((' ' * 30 + info_st) if t else info_st)
     pass
 
-# TESTS:
+# FOR TESTS:
 # a
 # b*a, a*b (one not possible)
 # 2*a-a-a
@@ -1457,7 +1518,8 @@ if __name__ == '__main__':
 # (4-2)^(5-2)
 # 2^(3^2)
 # 2^3^2
+# 2^(3-2)+(4-2)^3-(3-1)^(5-3)
+# 2^(3-2)+(4-2)^3-(3-1)^(5-3) + 2^3^2
 
 # todo:
 #  1. mathematics is loading should appear after input / new matrix
-#  2. 2^(3^2) show incorrect latexed input for the exponent (but e.g. 2^(5-2) is fine)
