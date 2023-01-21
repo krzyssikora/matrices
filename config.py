@@ -84,8 +84,8 @@ help_general_info = [["action", "command/-s", "help command"],
 #                      ["out", "out", '''Ends the application.''']
 #                      ]
 
-help_commands = [['CLS', [['cls', 'Clears the screen and prints again the names and dimensions </br>'
-                                  'of all matrices stored in the database.']]],
+help_commands = [['CLS', [['cls', 'Clears the screen and shows only </br>'
+                                  'the matrices stored in the database.']]],
                  ['*', [['a * b', 'Multiplies two numbers that are integers (e.g. 12) </br>'
                                   'or fractions (e.g. 97/11) or decimals (e.g. 0.25)'],
                         ['a * M, M * a', 'OR multiplies a matrix M by a number a'],
