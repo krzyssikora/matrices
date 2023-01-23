@@ -1,7 +1,9 @@
 {% extends "navbar.html" %}
 {% block navbar %}
 <div class="main">
-    <div id="general-help"><h1 class="section-header" id="help-header">general help menu</h1>
+    <div id="general-help">
+        <h1 class="section-header d-none d-sm-block" id="help-header">general help menu</h1>
+        <h1 class="section-header-small d-block d-sm-none">general help menu</h1>
         <div class="section-content">
             <div class="help-chunk">
                 {% for row in help_content['help_info'] %}

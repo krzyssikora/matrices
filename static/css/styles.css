@@ -5,8 +5,6 @@
   --section-height: calc(100vh - var(--navbar-height) - var(--scrollbar-width));
   --items-padding: 10px;
   --standard-margin-padding: 10px;
-  /* --left-width: calc(70% - 2 * var(--items-padding)); */
-  /* --right-width: calc(30% - 2 * var(--items-padding)); */
   --new-matrix-button-height: 45px;
   --scrollbar-width: 6px;
   /* colours */
@@ -82,12 +80,9 @@ body {
 
 .section-header-small {
   margin: 0;
-  /* position: fixed;  */
-  /* top: var(--navbar-height); */
   padding-left: calc( 2* var(--standard-margin-padding));
   height: var(--section-header-height);
   background-color: var(--colour-section-header);
-  /* width: inherit; */
   z-index: 1;
 }
 
@@ -124,12 +119,20 @@ body {
   height: var(--section-height);
 }
 
+@media screen and (max-width: 575px) {
+  .section-content {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  
+  .main-column {
+    overflow: scroll;
+    height: auto;
+  }
+}
+
 #algebra {
-  /* padding: var(--items-padding); */
-  /* width: var(--left-width); */
   background: var(--colour-left);
-  /* direction: rtl; */
-  /* text-align: left; */
 }
 
 .algebra-chunk {
@@ -188,7 +191,6 @@ span#clearfieldicon span:hover {
   width: calc(100% - 2 * var(--standard-margin-padding));
   margin: var(--standard-margin-padding);
   height: 30px;
-  /* direction: ltr; */
   border: solid 1px var(--colour-scrollbar);
   border-radius: 4px;
   font-size: large;
@@ -237,21 +239,14 @@ span#clearfieldicon span:hover {
 }
 
 #storage {
-  /* padding: var(--items-padding); */
-  /* width: var(--right-width); */
   background: var(--colour-right);
 }
 
 #add-matrix {
   position: fixed;
-  /* right: var(--scrollbar-width);  */
   right: 0;
-  /* margin-left: calc(-1 * var(--items-padding)); */
-  /* width: calc(var(--right-width) - 2 * var(--standard-margin-padding)); */
   width: inherit;
   height: calc(var(--new-matrix-button-height) - var(--standard-margin-padding));
-  /* height: var(--new-matrix-button-height); */
-  /* bottom: calc(var(--standard-margin-padding) + var(--items-padding) + var(--scrollbar-width) + 20px); */
   bottom: var(--scrollbar-width);
   background-color: var(--colour-navbar-background);
   border: 1px solid var(--colour-navbar-background-hover);
@@ -340,7 +335,6 @@ tr {
   overflow: auto; /* Enable scroll if needed */
   background-color: rgb(128,128,128); /*  Fallback color */
   background-color: rgba(128,128,128,0.9); /* Black w/ opacity */
-  /* background-color: var(--colour-transparent-gray); */
   padding-top: 60px;
 }
 
@@ -432,5 +426,6 @@ tr {
   visibility: hidden;
   display: none;
 }
+
 /* # for id
    . for class */
