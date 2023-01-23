@@ -1,12 +1,12 @@
 :root {
   /* dimensions */
   --navbar-height: 40px;
-  --section-header-height: 40px;
-  --section-height: calc(100vh - 2 * var(--navbar-height));
+  --section-header-height: 60px;
+  --section-height: calc(100vh - var(--navbar-height) - var(--scrollbar-width));
   --items-padding: 10px;
   --standard-margin-padding: 10px;
-  --left-width: calc(70% - 2 * var(--items-padding));
-  --right-width: calc(30% - 2 * var(--items-padding));
+  /* --left-width: calc(70% - 2 * var(--items-padding)); */
+  /* --right-width: calc(30% - 2 * var(--items-padding)); */
   --new-matrix-button-height: 45px;
   --scrollbar-width: 6px;
   /* colours */
@@ -40,17 +40,19 @@ body {
   background-color: var(--colour-navbar-background);
   position: fixed; 
   top: 0; 
-  width: calc(100% - 16px); 
-  height: var(--navbar-height);
+  width: 100%; 
+  max-height: var(--navbar-height);
 }
 
 /* Links inside the navbar */
 .navbar a {
   float: left;
-  display: block;
+  margin-left: var(--standard-margin-padding);
+  display: inline;
+  height: var(--navbar-height);
+  width: auto;
   color: var(--colour-navbar-text);
   text-align: center;
-  padding: 10px 20px;
   text-decoration: none;
 }
 
@@ -71,13 +73,21 @@ body {
   margin: 0;
   position: fixed; 
   top: var(--navbar-height);
-  display: block;
+  padding-left: calc( 2* var(--standard-margin-padding));
   height: var(--section-header-height);
   background-color: var(--colour-section-header);
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
-  width: auto;
+  width: inherit;
+  z-index: 1;
+}
+
+.section-header-small {
+  margin: 0;
+  /* position: fixed;  */
+  /* top: var(--navbar-height); */
+  padding-left: calc( 2* var(--standard-margin-padding));
+  height: var(--section-header-height);
+  background-color: var(--colour-section-header);
+  /* width: inherit; */
   z-index: 1;
 }
 
@@ -104,31 +114,22 @@ body {
   background: var(--colour-scrollbar-hover);
 }
 
-#algebra-header {
-  width: calc(var(--left-width) - 20px);
-}
-
-#storage-header {
-  width: calc(var(--right-width) - 20px);
-}
-
 .section-content {
   margin-top: var(--section-header-height);
   margin-bottom: var(--new-matrix-button-height);
 }
 
 .main-column {
-  float: left;
   overflow: scroll;
   height: var(--section-height);
 }
 
 #algebra {
-  padding: var(--items-padding);
-  width: var(--left-width);
+  /* padding: var(--items-padding); */
+  /* width: var(--left-width); */
   background: var(--colour-left);
-  direction: rtl;
-  text-align: left;
+  /* direction: rtl; */
+  /* text-align: left; */
 }
 
 .algebra-chunk {
@@ -166,7 +167,7 @@ div.deleteicon span:hover {
 span#clearfieldicon span {
   position: relative;
   display: block;
-  right: 20px;
+  left: calc(100% - 2 * var(--standard-margin-padding) - 15px);
   top: -35px;
   width: 20px;
   height: 20px;
@@ -186,11 +187,12 @@ span#clearfieldicon span:hover {
 #user-input {
   width: calc(100% - 2 * var(--standard-margin-padding));
   margin: var(--standard-margin-padding);
-  height: 26px;
-  direction: ltr;
+  height: 30px;
+  /* direction: ltr; */
   border: solid 1px var(--colour-scrollbar);
   border-radius: 4px;
   font-size: large;
+  padding: 4px;
 }
 
 .entered-formula {
@@ -235,22 +237,26 @@ span#clearfieldicon span:hover {
 }
 
 #storage {
-  padding: var(--items-padding);
-  width: var(--right-width);
+  /* padding: var(--items-padding); */
+  /* width: var(--right-width); */
   background: var(--colour-right);
 }
 
 #add-matrix {
-  position: fixed; 
-  margin-left: calc(-1 * var(--items-padding));
-  width: calc(var(--right-width) - 2 * var(--standard-margin-padding));
-  height: calc(var(--new-matrix-button-height) - 2*var(--standard-margin-padding));
-  bottom: calc(var(--standard-margin-padding) + var(--items-padding) + var(--scrollbar-width) + 2px);
+  position: fixed;
+  /* right: var(--scrollbar-width);  */
+  right: 0;
+  /* margin-left: calc(-1 * var(--items-padding)); */
+  /* width: calc(var(--right-width) - 2 * var(--standard-margin-padding)); */
+  width: inherit;
+  height: calc(var(--new-matrix-button-height) - var(--standard-margin-padding));
+  /* height: var(--new-matrix-button-height); */
+  /* bottom: calc(var(--standard-margin-padding) + var(--items-padding) + var(--scrollbar-width) + 20px); */
+  bottom: var(--scrollbar-width);
   background-color: var(--colour-navbar-background);
-  padding: var(--standard-margin-padding);
   border: 1px solid var(--colour-navbar-background-hover);
   font-weight: bold;
-  font-size: large;
+  font-size: larger;
   color: var(--colour-navbar-text);
   text-align: center;
   cursor: pointer;
@@ -323,7 +329,7 @@ tr {
 
 
 /* The Modal (background) */
-.modal {
+.custom-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
   z-index: 1; /* Sit on top */
@@ -332,14 +338,16 @@ tr {
   width: 100%; 
   height: 100%;
   overflow: auto; /* Enable scroll if needed */
-  background-color: rgb(128,128,128); /* Fallback color */
+  background-color: rgb(128,128,128); /*  Fallback color */
   background-color: rgba(128,128,128,0.9); /* Black w/ opacity */
+  /* background-color: var(--colour-transparent-gray); */
   padding-top: 60px;
 }
 
 /* Modal Content/Box */
 .modal-content {
-  background-color: var(--colour-main-background);
+  display: block;
+  background-color: var(--colour-transparent-gray);
   margin: 5px auto; /* 15% from the top and centered */
   border: 1px solid var(--colour-border);
   border-radius: 10px;

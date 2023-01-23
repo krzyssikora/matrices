@@ -69,18 +69,19 @@ var modal_content = document.getElementById('modal_div');
 
     function showMathsLoadingPopUp() {
         pop_up.style.display = 'block';
-        var i = 0
         for (let j=0; j<20; j++) {
             let clone = document.createElement('span');
             clone.innerHTML = 'mathematics is loading... ';
-            clone.id = `wait_${i}`;
-            i++;
+            clone.id = `wait_${modal_content.children.length}`;
             clone.style.color = '#' + Math.floor(Math.random()*16777215).toString(16);
             clone.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
             clone.style.fontSize = (50 + Math.floor(Math.random()*35)).toString(16) + 'px';
+            clone.style.float = 'left';
+            console.log(clone.id)
             modal_content.appendChild(clone);
         };
     };
+    // <span id="wait_0" style="color: rgb(183, 65, 3); font-size: 41px; display: inline;">mathematics is loading... </span>
 
     function hideMathsLoadingPopUp() {
         modal_content.innerHTML = '';
