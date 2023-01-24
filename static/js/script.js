@@ -77,11 +77,9 @@ var modal_content = document.getElementById('modal_div');
             clone.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
             clone.style.fontSize = (50 + Math.floor(Math.random()*35)).toString(16) + 'px';
             clone.style.float = 'left';
-            console.log(clone.id)
             modal_content.appendChild(clone);
         };
     };
-    // <span id="wait_0" style="color: rgb(183, 65, 3); font-size: 41px; display: inline;">mathematics is loading... </span>
 
     function hideMathsLoadingPopUp() {
         modal_content.innerHTML = '';

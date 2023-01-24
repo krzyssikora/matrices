@@ -11,20 +11,18 @@
   --colour-left: rgb(253, 248, 207);
   --colour-left-formula: rgb(255, 236, 175);
   --colour-left-border: rgb(145, 86, 9);
-  /* --colour-left: rgb(255, 210, 251);
-  --colour-left-formula: rgb(253, 183, 238);
-  --colour-left-border: rgb(255, 18, 184); */
   --colour-right: rgb(207, 237, 255);
   --colour-navbar-background: rgb(196, 255, 176);
   --colour-navbar-text: rgb(97, 94, 94);
   --colour-navbar-background-hover: rgb(255, 126, 94);
   --colour-navbar-text-hover: white;
-  --colour-section-header: rgba(255, 255, 255, 0.5);
   --colour-transparent-gray: rgba(255, 255, 255, 0.5);
-  --colour-scrollbar: rgb(255, 126, 94);
+  --colour-section-header: var(--colour-transparent-gray);
+  --colour-scrollbar: var(--colour-navbar-background-hover);
   --colour-scrollbar-background: var(--colour-navbar-background);
   --colour-scrollbar-hover: rgb(78, 78, 78);
   --colour-pop-up-button: var(--colour-navbar-background);
+  --colour-table-general-background: rgb(59, 96, 245);
 }
 
 body {
@@ -245,14 +243,14 @@ span#clearfieldicon span:hover {
 #add-matrix {
   position: fixed;
   right: 0;
+  bottom: var(--scrollbar-width);
   width: inherit;
   height: calc(var(--new-matrix-button-height) - var(--standard-margin-padding));
-  bottom: var(--scrollbar-width);
   background-color: var(--colour-navbar-background);
+  color: var(--colour-navbar-text);
   border: 1px solid var(--colour-navbar-background-hover);
   font-weight: bold;
   font-size: larger;
-  color: var(--colour-navbar-text);
   text-align: center;
   cursor: pointer;
 }
@@ -290,7 +288,7 @@ tr {
 .table-general-help tbody > tr:hover {
   color: var(--colour-navbar-background-hover);
   border-bottom: 1px solid black;
-  background-color: rgb(59, 96, 245);
+  background-color: var(--colour-table-general-background);
   cursor: pointer;
 }
 

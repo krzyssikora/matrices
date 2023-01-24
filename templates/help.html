@@ -2,8 +2,10 @@
 {% block navbar %}
 <div class="main">
     <div id="general-help">
+
         <h1 class="section-header d-none d-sm-block" id="help-header">general help menu</h1>
         <h1 class="section-header-small d-block d-sm-none">general help menu</h1>
+
         <div class="section-content">
             <div class="help-chunk">
                 {% for row in help_content['help_info'] %}
@@ -13,16 +15,20 @@
             
             <div class="help-chunk table-responsive">
                 <table class="table-general-help">
+                    
                     <thead>
                         {{ help_content['table_header']|safe}}
                     </thead>
+
                     <tbody>
                         {% for row in help_content['table_content'] %}
                         {{ row }}
                         {% endfor %}
                     </tbody>
+                    
                 </table>
             </div>
+
         </div>
         {% include 'modals.html' %}
 </div>
