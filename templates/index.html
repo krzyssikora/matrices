@@ -1,23 +1,25 @@
 {% extends "navbar.html" %}
 {% block navbar %}
-<div class="main">
-    <div class="main-column" id="algebra"><h1 class="section-header" id="algebra-header">algebra</h1>
-        <div class="section-content">
-            <!-- <div class="algebra-chunk">
-                <p class="app-answer">
-                    \(\begin{pmatrix}\frac{4}{3}& -\frac{2}{3}& -\frac{1}{2}\\-\frac{7}{6}& \frac{1}{2}& -\frac{1}{2}\\1& \frac{2}{3}& \frac{2}{3}\\\end{pmatrix}\)
-                </p>
-            </div> -->
+<div class="main row g-0">
+    <div class="main-column col-sm-7" id="algebra">
 
+        <h1 class="section-header d-none d-sm-block" id="algebra-header">algebra</h1>
+        <h1 class="section-header-small d-block d-sm-none">algebra</h1>
+        
+        <div class="section-content mh-100">
             <span id="clearfieldicon">
                 <input type="text" id="user-input" placeholder="enter your expression"><span id="user-input-clear">x</span>
             </span>
         </div>
+
     </div>
 
-    <div class="main-column" id="storage">
-        <h1 class="section-header" id="storage-header">storage</h1>
-        <div class="section-content">
+    <div class="main-column col-sm-5" id="storage">
+        
+        <h1 class="section-header d-none d-sm-block" id="storage-header">storage</h1>
+        <h1 class="section-header-small d-block d-sm-none">storage</h1>
+        
+        <div class="section-content mh-100 mw-100">
             {% for matrix_data in matrices_list %}
                 <div class="deleteicon">
                     <div class="algebra-chunk" id="storage-matrix-{{loop.index0}}">
@@ -25,8 +27,9 @@
                         <p class="app-answer" data-name="{{matrix_data.0}}">{{matrix_data.1}}</p></div>
                     </div>
             {% endfor %}
-            <div id="add-matrix">add</div>
         </div>
+        
+        <div id="add-matrix" class="mw-100">add</div>
     </div>
 
     
