@@ -1,6 +1,6 @@
 from matrices import app
 from matrices import database, utils, algebra, config
-from flask import render_template, request, jsonify, Markup  # , redirect, url_for
+from flask import render_template, request, jsonify, Markup
 import git
 import logging
 from datetime import datetime
