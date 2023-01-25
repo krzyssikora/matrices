@@ -1,22 +1,22 @@
 from matrices import app
 from matrices import database, utils, algebra, config
 from flask import render_template, request, jsonify, Markup
-import git
+# import git
 import logging
 from datetime import datetime
 
 
-@app.route('/git_update', methods=['POST'])
-def git_update():
-    if request.method == 'POST':
-        repo = git.Repo('./matrices')
-        origin = repo.remotes.origin
-        repo.create_head('master',
-                         origin.refs.master).set_tracking_branch(origin.refs.master).checkout()
-        origin.pull()
-        return '', 200
-    else:
-        return '', 400
+# @app.route('/git_update', methods=['POST'])
+# def git_update():
+#     if request.method == 'POST':
+#         repo = git.Repo('./matrices')
+#         origin = repo.remotes.origin
+#         repo.create_head('master',
+#                          origin.refs.master).set_tracking_branch(origin.refs.master).checkout()
+#         origin.pull()
+#         return '', 200
+#     else:
+#         return '', 400
 
 
 @app.route('/')

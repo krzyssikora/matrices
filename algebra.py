@@ -316,6 +316,9 @@ class Matrix:
                     return_string += separator
         return return_string
 
+    def __eq__(self, other):
+        return str(self) == str(other)
+
     def get_latex_form(self):
         return self.__str__(output_form='ltx')
 

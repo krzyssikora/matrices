@@ -595,6 +595,9 @@ class StringTransformer:
             if opening_index == 0 or self.input_string[opening_index - 1] != '^':
                 self.latex_dict[opening_index] = '{('
                 self.latex_dict[closing_index] = ')}'
+            elif not all(ch.isdigit() or ch == '.' for ch in self.input_string[opening_index + 2: closing_index]):
+                self.latex_dict[opening_index] = '{('
+                self.latex_dict[closing_index] = ')}'
             self.brackets.remove((opening_index, closing_index))
             self.input_string = self.input_string[:opening_index] + '_' + self.input_string[opening_index + 1:]
             self.input_string = self.input_string[:closing_index] + '_' + self.input_string[closing_index + 1:]
