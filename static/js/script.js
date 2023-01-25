@@ -52,10 +52,6 @@ var modal_content = document.getElementById('modal_div');
     };
     function updateStorage2() {
         MathJax.typeset();
-        updateStorage3();
-    };
-
-    function updateStorage3() {
         window.loaded = 1;
     };
 
