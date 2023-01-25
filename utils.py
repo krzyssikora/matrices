@@ -300,11 +300,13 @@ class StringTransformer:
                     break
                 previous_end = pos_1
                 top, bottom = get_fraction_from_decimal_string(object_string)
+
+                # check if there is a minus in front, i.e. the number is negative
                 bare_minus_condition_met = \
                     (pos_0 == 1 and temporary_input_string[0] == '-') \
                     or (pos_0 > 1
                         and temporary_input_string[pos_0 - 1] == '-'
-                        and temporary_input_string[pos_0 - 2] == '^')
+                        and temporary_input_string[pos_0 - 2] in {'^', '('})
                 if bare_minus_condition_met:
                     temporary_list.append((pos_0 - 1, pos_1,
                                            (-top, bottom),
@@ -590,8 +592,9 @@ class StringTransformer:
 
         _logger.debug(f'mutually_exclusive_brackets: {mutually_exclusive_brackets}')
         for opening_index, closing_index in mutually_exclusive_brackets:
-            self.latex_dict[opening_index] = '{('
-            self.latex_dict[closing_index] = ')}'
+            if opening_index == 0 or self.input_string[opening_index - 1] != '^':
+                self.latex_dict[opening_index] = '{('
+                self.latex_dict[closing_index] = ')}'
             self.brackets.remove((opening_index, closing_index))
             self.input_string = self.input_string[:opening_index] + '_' + self.input_string[opening_index + 1:]
             self.input_string = self.input_string[:closing_index] + '_' + self.input_string[closing_index + 1:]
