@@ -1530,25 +1530,3 @@ def debug_intro(inspect_stack):
 
 if __name__ == '__main__':
     pass
-
-# FOR TESTS:
-# a
-# b*a, a*b (one not possible)
-# 2*a-a-a
-# a^2-a*a
-# aug(aug(a,a),a)
-# aug(a,aug(a,a))
-# h=a
-# del(a,b)
-# del(a)
-# del a
-# (4-2)^3
-# 2^(5-2)
-# (4-2)^(5-2)
-# 2^(3^2)
-# 2^3^2
-# 2^(3-2)+(4-2)^3-(3-1)^(5-3)
-# 2^(3-2)+(4-2)^3-(3-1)^(5-3) + 2^3^2
-
-
-# todo: tests (?)

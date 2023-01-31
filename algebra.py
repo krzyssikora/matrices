@@ -205,7 +205,7 @@ class Matrix:
             values = []
 
         # creating list of numerators (mat) and denominators
-        arranged = (len(values) == rows and rows > 1)
+        arranged = (len(values) == rows and rows > 1 and columns != 1)
         for r in range(rows):
             list_numerator = list()
             list_denominator = list()
